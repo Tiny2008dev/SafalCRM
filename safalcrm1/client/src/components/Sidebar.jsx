@@ -8,6 +8,7 @@ const sidebarItems = [
   "BOM",
   "Production",
   "Orders",
+  "Records",
   "Reports",
 ];
 
@@ -17,8 +18,7 @@ function Sidebar({ activePage, onSelect, onLogout }) {
       <div className="brand-block">
         <img className="brand-mark" src={`${process.env.PUBLIC_URL}/Safallogo.png`} alt="Safal Marg" />
         <div>
-          <h1>Safal Marg</h1>
-          <p>Perfume Manufacturing</p>
+          <h1>Safal Cosmetics</h1>
         </div>
       </div>
       <nav className="menu-list" aria-label="Main navigation">

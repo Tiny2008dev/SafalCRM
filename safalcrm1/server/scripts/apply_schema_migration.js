@@ -41,10 +41,17 @@ const ensureIndex = async(indexName, tableName, columns) => {
 };
 
 (async() => {
+    await addColumnIfMissing('clients', 'gstin', 'VARCHAR(20) AFTER company_name');
+    await addColumnIfMissing('clients', 'office_address', 'VARCHAR(255) AFTER gstin');
+    await addColumnIfMissing('clients', 'godown_address', 'VARCHAR(255) AFTER office_address');
     await addColumnIfMissing('materials', 'material_source', "ENUM('CLIENT','OWN') NOT NULL DEFAULT 'OWN' AFTER minimum_stock");
     await addColumnIfMissing('materials', 'client_id', 'INT NULL AFTER material_source');
     await addColumnIfMissing('materials', 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1 AFTER client_id');
+    await addColumnIfMissing('materials', 'vendor_name', 'VARCHAR(150) AFTER minimum_stock');
+    await addColumnIfMissing('materials', 'material_rate', 'DECIMAL(14,4) AFTER vendor_name');
     await addColumnIfMissing('products', 'client_id', 'INT NULL AFTER selling_price');
+    await addColumnIfMissing('products', 'product_date', 'DATE AFTER selling_price');
+    await addColumnIfMissing('products', 'expiry_date', 'DATE AFTER product_date');
     await addColumnIfMissing('bom', 'client_id', 'INT NULL AFTER unit');
 
     const [salesColumns] = await q.query('DESCRIBE sales_orders');

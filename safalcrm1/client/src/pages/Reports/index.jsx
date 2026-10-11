@@ -315,8 +315,7 @@ handleApplyFilters(createDefaultFilters());
 
   return (
     <div>
-      <PageIntro eyebrow="Business intelligence" title="Reports & Analytics" description="Sales, production, and inventory insight for better daily decisions." />
-
+      <PageIntro title="Reports & Analytics" />
       <section className="card reports-filter-card">
         <div className="reports-filters">
           <div className="filter-group">

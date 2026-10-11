@@ -186,8 +186,7 @@ const ProductionPage = () => {
 
   return (
     <div>
-      <PageIntro eyebrow="Factory operations" title="Production" description="Create production orders and verify material availability before completion." />
-
+      <PageIntro title="Production" />
       {(error || success) && (
         <div style={{ marginBottom: '16px' }}>
           {error && <div className="empty-state">{error}</div>}

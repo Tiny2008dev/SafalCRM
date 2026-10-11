@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { fetchJson, postJson, putJson, deleteJson } from "../../services/api";
+import { fetchJson, postJson, putJson } from "../../services/api";
 import PageIntro from "../../components/PageIntro";
+import SearchResults from "../../components/SearchResults";
 
 const emptyForm = {
   product_id: "",
@@ -8,12 +9,13 @@ const emptyForm = {
   quantity_required: "",
 };
 
-const BOM = () => {
+const BOM = ({ editRecord, onEditConsumed }) => {
   const [products, setProducts] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [bomItems, setBomItems] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -145,7 +147,8 @@ const BOM = () => {
     }
   };
 
-  const handleEdit = (item) => {
+  const handleEdit = useCallback((item) => {
+    setSelectedProduct(String(item.product_id || selectedProduct));
     setForm({
       product_id: String(item.product_id || selectedProduct),
       material_id: String(item.material_id || ""),
@@ -154,32 +157,19 @@ const BOM = () => {
     setEditingId(item.id);
     setError("");
     setSuccess("");
-  };
+  }, [selectedProduct]);
 
-  const handleDelete = async (item) => {
-    const confirmed = window.confirm(`Remove this BOM item for ${item.material_name || "material"}?`);
-    if (!confirmed) return;
-
-    setError("");
-    setSuccess("");
-    try {
-      await deleteJson(`/bom/${item.id}`);
-      setSuccess("BOM item deleted successfully.");
-      if (editingId === item.id) {
-        resetForm();
-      }
-      if (selectedProduct) {
-        await loadBom(selectedProduct);
-      }
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (editRecord?.type === "BOM") {
+      handleEdit(editRecord.value);
+      onEditConsumed?.();
     }
-  };
+  }, [editRecord, handleEdit, onEditConsumed]);
 
   const productName = products.find((product) => String(product.id) === String(selectedProduct))?.product_name || "";
 
   const filteredBom = bomItems.filter((item) => {
-    const q = query.trim().toLowerCase();
+    const q = appliedQuery.trim().toLowerCase();
     if (!q) return true;
 
     return [item.material_name, item.material_code, item.unit]
@@ -189,8 +179,7 @@ const BOM = () => {
 
   return (
     <div className="bom-page">
-      <PageIntro eyebrow="Recipe planning" title="Bill of Materials" description="Define materials required to build each product." />
-
+      <PageIntro title="Bill of Materials" />
       <div className="toolbar bom-product-toolbar">
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -287,52 +276,30 @@ const BOM = () => {
           <div className="empty-state">Loading BOM…</div>
         ) : (
           <>
-            <div className="toolbar bom-list-toolbar">
+            <div className="toolbar bom-list-toolbar search-toolbar">
               <span className="bom-count">{filteredBom.length} {filteredBom.length === 1 ? "material" : "materials"}</span>
-              <input
-                className="search"
-                placeholder="Search materials in this BOM"
-                aria-label="Search materials in this BOM"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
+              <form className="search-control" onSubmit={(event) => { event.preventDefault(); setAppliedQuery(query); }}>
+                <input
+                  type="search"
+                  className="search"
+                  placeholder="Search BOM materials"
+                  aria-label="Search materials in this BOM"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+                <button type="submit" className="btn secondary search-submit">Search</button>
+              </form>
             </div>
-
-            {filteredBom.length === 0 ? (
-              <div className="empty-state">
-                {productName ? `No BOM items found for ${productName}.` : "No BOM items found."}
-              </div>
-            ) : (
-              <div className="table-responsive">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>Material</th>
-                      <th>Quantity Required</th>
-                      <th>Unit</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredBom.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.material_name || "—"}</td>
-                        <td>{item.quantity_required ?? "—"}</td>
-                        <td>{item.unit || "—"}</td>
-                        <td>
-                          <button type="button" className="btn" onClick={() => handleEdit(item)}>
-                            Edit
-                          </button>
-                          <button type="button" className="btn danger" onClick={() => handleDelete(item)}>
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+            <SearchResults
+              query={appliedQuery}
+              title={`BOM search results · ${productName}`}
+              loading={loading}
+              results={filteredBom.map((item) => ({
+                id: item.id,
+                label: item.material_name || "Unnamed material",
+                detail: [item.material_code, `${item.quantity_required ?? "—"} ${item.unit || ""}`.trim()].filter(Boolean).join(" · "),
+              }))}
+            />
           </>
         )}
       </section>

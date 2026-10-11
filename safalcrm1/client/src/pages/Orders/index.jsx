@@ -1,6 +1,7 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchJson, postJson, putJson, deleteJson } from '../../services/api';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { fetchJson, postJson, putJson } from '../../services/api';
 import PageIntro from '../../components/PageIntro';
+import SearchResults from '../../components/SearchResults';
 
 const newOrder = () => ({
   client_id: '',
@@ -11,7 +12,7 @@ const newOrder = () => ({
 const money = (value) => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const quantityLabel = (value) => Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 
-export default function OrdersPage() {
+export default function OrdersPage({ editRecord, onEditConsumed }) {
   const [orders, setOrders] = useState([]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
@@ -21,6 +22,7 @@ export default function OrdersPage() {
   const [form, setForm] = useState(newOrder);
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -50,7 +52,7 @@ export default function OrdersPage() {
 
   useEffect(() => { load(); }, []);
 
-  const ensureBom = (productId) => {
+  const ensureBom = useCallback((productId) => {
     if (!productId || bomByProduct[productId]) return Promise.resolve(bomByProduct[productId] || []);
     if (!bomRequests.current[productId]) {
       bomRequests.current[productId] = fetchJson(`/bom/${productId}`)
@@ -68,7 +70,7 @@ export default function OrdersPage() {
         });
     }
     return bomRequests.current[productId];
-  };
+  }, [bomByProduct]);
 
   const total = useMemo(
     () => form.items.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unit_price || 0), 0),
@@ -190,7 +192,7 @@ export default function OrdersPage() {
     }
   };
 
-  const edit = (order) => {
+  const edit = useCallback((order) => {
     const items = (order.items || []).map((item) => ({ product_id: String(item.product_id), quantity: String(item.quantity), unit_price: String(item.unit_price) }));
     setEditingId(order.id);
     setForm({
@@ -202,32 +204,47 @@ export default function OrdersPage() {
     items.forEach((item) => ensureBom(item.product_id));
     setError('');
     setSuccess('');
-  };
+  }, [ensureBom]);
 
-  const remove = async (order) => {
-    if (!window.confirm(`Delete order #${order.id}?`)) return;
-    try {
-      await deleteJson(`/orders/${order.id}`);
-      setSuccess('Order deleted successfully.');
-      await load();
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (editRecord?.type === 'Orders') {
+      edit(editRecord.value);
+      onEditConsumed?.();
     }
-  };
+  }, [editRecord, edit, onEditConsumed]);
 
-  const visible = orders.filter((order) => JSON.stringify(order).toLowerCase().includes(search.toLowerCase()));
+  const visible = orders.filter((order) => JSON.stringify(order).toLowerCase().includes(appliedSearch.toLowerCase()));
   const addItem = () => setForm((current) => ({ ...current, items: [...current.items, { product_id: '', quantity: '1', unit_price: '' }] }));
   const removeItem = (lineIndex) => setForm((current) => ({ ...current, items: current.items.filter((_, index) => index !== lineIndex) }));
 
   return (
     <div>
-      <PageIntro eyebrow="Sales workspace" title="Orders" description="Create orders with one or more products and keep a complete fulfilment record." />
-      <div className="toolbar">
+      <PageIntro title="Orders" />
+      <div className="toolbar search-toolbar">
         <div className="toolbar-actions">
           <button className="btn primary" type="button" onClick={reset}>{editingId ? 'New Order' : 'Add Order'}</button>
-          <input className="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders" />
+          <form className="search-control" onSubmit={(event) => { event.preventDefault(); setAppliedSearch(search); }}>
+          <input type="search" className="search" aria-label="Search orders" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search orders by client, product, status..." />
+            <button type="submit" className="btn secondary search-submit">Search</button>
+          </form>
         </div>
       </div>
+
+      <SearchResults
+        query={appliedSearch}
+        title="Order search results"
+        loading={loading}
+        results={visible.map((order) => ({
+          id: order.id,
+          label: `Order #${order.id} · ${order.client_name || "Unknown client"}`,
+          detail: [
+            order.items?.map((item) => `${item.product_name} × ${item.quantity}`).join(", "),
+            order.order_date,
+            order.status,
+            `₹${money(order.total_amount)}`,
+          ].filter(Boolean).join(' · '),
+        }))}
+      />
 
       {(error || success) && <div className="empty-state" role={error ? 'alert' : 'status'}>{error || success}</div>}
 
@@ -325,26 +342,6 @@ export default function OrdersPage() {
         </div>
       </form>
 
-      <section className="page-body">
-        {loading ? <div className="empty-state">Loading orders…</div> : !visible.length ? <div className="empty-state">No orders found.</div> : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead><tr><th>ID</th><th>Client</th><th>Products</th><th>Amount</th><th>Date &amp; Time</th><th>Status</th><th>Actions</th></tr></thead>
-              <tbody>
-                {visible.map((order) => (
-                  <tr key={order.id}>
-                    <td>#{order.id}</td><td>{order.client_name}</td>
-                    <td>{order.items?.map((item) => `${item.product_name} × ${item.quantity}`).join(', ')}</td>
-                    <td>₹{money(order.total_amount)}</td><td>{order.order_date}</td>
-                    <td><span className={`status-badge ${String(order.status).toLowerCase()}`}>{order.status}</span></td>
-                    <td><button type="button" className="btn secondary" onClick={() => edit(order)}>Edit</button> <button type="button" className="btn danger" onClick={() => remove(order)}>Delete</button></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </div>
   );
 }

@@ -58,12 +58,9 @@ const DashboardPage = ({ onNavigate }) => {
     <div className="dashboard-page">
       <header className="dashboard-header">
         <div>
-          <p className="eyebrow">SAFAL MARG / OPERATIONS</p>
           <h1>Dashboard</h1>
-          <p className="dashboard-description">A clear view of orders, production, and materials that need attention.</p>
         </div>
         <div className="dashboard-header-actions">
-          <span className="dashboard-updated">{updatedAt ? `Updated ${updatedAt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}` : "Live overview"}</span>
           <button className="btn secondary" type="button" onClick={() => loadDashboard(true)} disabled={refreshing}>
             {refreshing ? "Refreshing…" : "Refresh"}
           </button>

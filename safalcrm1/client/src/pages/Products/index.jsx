@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { fetchJson, postJson, putJson, deleteJson } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { fetchJson, postJson, putJson } from '../../services/api';
 import PageIntro from '../../components/PageIntro';
+import SearchResults from '../../components/SearchResults';
 
 const emptyProduct = {
   product_code: '',
   product_name: '',
   size: '',
+  product_date: '',
+  expiry_date: '',
   description: '',
   selling_price: '',
   client_id: '',
 };
 
-const ProductsPage = () => {
+const ProductsPage = ({ editRecord, onEditConsumed }) => {
   const [products, setProducts] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +22,7 @@ const ProductsPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [query, setQuery] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
   const [form, setForm] = useState(emptyProduct);
   const [editingId, setEditingId] = useState(null);
 
@@ -34,8 +38,6 @@ const ProductsPage = () => {
     'White Woods',
     'Signature Elixir',
   ];
-
-  const sizeOptions = ['30ml', '50ml', '75ml', '100ml', '120ml', '150ml', '200ml'];
 
   const loadProducts = async () => {
     setLoading(true);
@@ -101,6 +103,8 @@ const ProductsPage = () => {
         product_code: form.product_code.trim(),
         product_name: form.product_name.trim(),
         size: form.size.trim(),
+        product_date: form.product_date || null,
+        expiry_date: form.expiry_date || null,
         description: form.description.trim(),
         selling_price: Number(form.selling_price),
         client_id: form.client_id ? Number(form.client_id) : null,
@@ -123,11 +127,13 @@ const ProductsPage = () => {
     }
   };
 
-  const handleEdit = (product) => {
+  const handleEdit = useCallback((product) => {
     setForm({
       product_code: product.product_code || '',
       product_name: product.product_name || '',
       size: product.size || '',
+      product_date: product.product_date ? String(product.product_date).slice(0, 10) : '',
+      expiry_date: product.expiry_date ? String(product.expiry_date).slice(0, 10) : '',
       description: product.description || '',
       selling_price: product.selling_price != null ? String(product.selling_price) : '',
       client_id: product.client_id?.toString() ?? '',
@@ -135,34 +141,25 @@ const ProductsPage = () => {
     setEditingId(product.id);
     setError('');
     setSuccess('');
-  };
+  }, []);
 
-  const handleDelete = async (product) => {
-    const confirmed = window.confirm(`Delete product ${product.product_code}?`);
-    if (!confirmed) return;
-
-    setError('');
-    setSuccess('');
-    try {
-      await deleteJson(`/products/${product.id}`);
-      setSuccess('Product deleted successfully.');
-      if (editingId === product.id) {
-        resetForm();
-      }
-      await loadProducts();
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (editRecord?.type === 'Products') {
+      handleEdit(editRecord.value);
+      onEditConsumed?.();
     }
-  };
+  }, [editRecord, handleEdit, onEditConsumed]);
 
   const filteredProducts = products.filter((product) => {
-    const q = query.trim().toLowerCase();
+    const q = appliedQuery.trim().toLowerCase();
     if (!q) return true;
 
     return [
       product.product_code,
       product.product_name,
       product.size,
+      product.product_date,
+      product.expiry_date,
       product.description,
       product.selling_price,
     ]
@@ -172,21 +169,41 @@ const ProductsPage = () => {
 
   return (
     <div>
-      <PageIntro eyebrow="Product catalog" title="Products" description="Manage your product catalog and pricing." />
-
-      <div className="toolbar">
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <PageIntro title="Products" />
+      <div className="toolbar search-toolbar">
+        <div className="toolbar-actions">
           <button type="button" className="btn primary" onClick={resetForm}>
             {editingId ? 'New Product' : 'Add Product'}
           </button>
+          <form className="search-control" onSubmit={(event) => { event.preventDefault(); setAppliedQuery(query); }}>
           <input
+            type="search"
             className="search"
-            placeholder="Search products"
+            aria-label="Search products"
+            placeholder="Search code, product, size, date..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+            <button type="submit" className="btn secondary search-submit">Search</button>
+          </form>
         </div>
       </div>
+
+      <SearchResults
+        query={appliedQuery}
+        title="Product search results"
+        loading={loading}
+        results={filteredProducts.map((product) => ({
+          id: product.id,
+          label: `${product.product_code || ""} ${product.product_name || "Unnamed product"}`.trim(),
+          detail: [
+            product.size,
+            product.product_date ? `Date: ${String(product.product_date).slice(0, 10)}` : null,
+            product.expiry_date ? `Expires: ${String(product.expiry_date).slice(0, 10)}` : null,
+            product.client_name,
+          ].filter(Boolean).join(' · '),
+        }))}
+      />
 
       {(error || success) && (
         <div style={{ marginBottom: '16px' }}>
@@ -226,12 +243,15 @@ const ProductsPage = () => {
             </div>
             <div className="form-group">
               <label>Size *</label>
-              <select value={form.size} onChange={handleChange('size')} required>
-                <option value="">-- Select Size --</option>
-                {sizeOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </select>
+              <input type="text" value={form.size} onChange={handleChange('size')} placeholder="e.g. 100ml, 500g, Custom" required />
+            </div>
+            <div className="form-group">
+              <label>Manufacture Date</label>
+              <input type="date" value={form.product_date} onChange={handleChange('product_date')} />
+            </div>
+            <div className="form-group">
+              <label>Expiry Date</label>
+              <input type="date" value={form.expiry_date} onChange={handleChange('expiry_date')} min={form.product_date || undefined} />
             </div>
             <div className="form-group">
               <label>Selling Price *</label>
@@ -265,54 +285,6 @@ const ProductsPage = () => {
         </div>
       </form>
 
-      <section className="page-body">
-        {loading ? (
-          <div className="empty-state">Loading products…</div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="empty-state">No products found.</div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Product</th>
-                  <th>Size</th>
-                  <th>Client</th>
-                  <th>Selling Price</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.map((product) => (
-                  <tr key={product.id || product.product_code}>
-                    <td>{product.product_code || '—'}</td>
-                    <td>{product.product_name || '—'}</td>
-                    <td>{product.size || '—'}</td>
-                    <td>{product.client_name || 'General'}</td>
-                    <td>
-                      {product.selling_price != null
-                        ? Number(product.selling_price).toLocaleString(undefined, {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })
-                        : '—'}
-                    </td>
-                    <td>
-                      <button type="button" className="btn" onClick={() => handleEdit(product)}>
-                        Edit
-                      </button>
-                      <button type="button" className="btn danger" onClick={() => handleDelete(product)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </div>
   );
 };

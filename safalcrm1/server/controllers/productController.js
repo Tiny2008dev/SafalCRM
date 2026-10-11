@@ -16,6 +16,8 @@ const mapProduct = (row) => ({
     size: row.size,
     description: row.description,
     selling_price: row.selling_price,
+    product_date: row.product_date,
+    expiry_date: row.expiry_date,
     client_id: row.client_id,
     client_name: row.client_name || null,
     created_at: row.created_at,
@@ -30,7 +32,13 @@ const productCodeExists = async(productCode, excludedId = null) => {
     return rows.length > 0;
 };
 
-const validateProduct = ({ product_code, product_name, size, selling_price, client_id }) => {
+const isValidDate = (value) => !value || (
+    /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+    !Number.isNaN(Date.parse(`${value}T00:00:00Z`)) &&
+    new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value
+);
+
+const validateProduct = ({ product_code, product_name, size, selling_price, client_id, product_date, expiry_date }) => {
     const errors = [];
 
     if (!product_code || !product_code.toString().trim()) {
@@ -47,6 +55,9 @@ const validateProduct = ({ product_code, product_name, size, selling_price, clie
     if (sellingPrice === null || sellingPrice < 0) {
         errors.push("Selling price must be 0 or greater.");
     }
+    if (!isValidDate(product_date)) errors.push("Date must be a valid calendar date.");
+    if (!isValidDate(expiry_date)) errors.push("Expiry date must be a valid calendar date.");
+    if (product_date && expiry_date && expiry_date < product_date) errors.push("Expiry date cannot be earlier than the product date.");
 
     const clientId = client_id === "" || client_id === null || client_id === undefined ? null : Number(client_id);
     if (clientId !== null && (!Number.isInteger(clientId) || clientId <= 0)) errors.push("Client is invalid.");
@@ -66,12 +77,14 @@ exports.getProducts = async(req, res) => {
 };
 
 exports.createProduct = async(req, res) => {
-    const { product_code, product_name, size, description, selling_price, client_id } = req.body;
+    const { product_code, product_name, size, description, selling_price, product_date, expiry_date, client_id } = req.body;
     const { errors, sellingPrice, clientId } = validateProduct({
         product_code,
         product_name,
         size,
         selling_price,
+        product_date,
+        expiry_date,
         client_id,
     });
 
@@ -86,12 +99,14 @@ exports.createProduct = async(req, res) => {
         if (clientId && !(await clientExists(clientId))) return res.status(400).json({ message: "Client is invalid." });
 
         const [result] = await db.query(
-            "INSERT INTO products (product_code, product_name, size, description, selling_price, client_id) VALUES (?, ?, ?, ?, ?, ?)", [
+            "INSERT INTO products (product_code, product_name, size, description, selling_price, product_date, expiry_date, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
                 product_code.toString().trim(),
                 product_name.toString().trim(),
                 size.toString().trim(),
                 description ? description.toString().trim() : null,
                 sellingPrice,
+                product_date || null,
+                expiry_date || null,
                 clientId,
             ]
         );
@@ -106,12 +121,14 @@ exports.createProduct = async(req, res) => {
 
 exports.updateProduct = async(req, res) => {
     const { id } = req.params;
-    const { product_code, product_name, size, description, selling_price, client_id } = req.body;
+    const { product_code, product_name, size, description, selling_price, product_date, expiry_date, client_id } = req.body;
     const { errors, sellingPrice, clientId } = validateProduct({
         product_code,
         product_name,
         size,
         selling_price,
+        product_date,
+        expiry_date,
         client_id,
     });
 
@@ -131,12 +148,14 @@ exports.updateProduct = async(req, res) => {
         if (clientId && !(await clientExists(clientId))) return res.status(400).json({ message: "Client is invalid." });
 
         await db.query(
-            "UPDATE products SET product_code = ?, product_name = ?, size = ?, description = ?, selling_price = ?, client_id = ? WHERE id = ?", [
+            "UPDATE products SET product_code = ?, product_name = ?, size = ?, description = ?, selling_price = ?, product_date = ?, expiry_date = ?, client_id = ? WHERE id = ?", [
                 product_code.toString().trim(),
                 product_name.toString().trim(),
                 size.toString().trim(),
                 description ? description.toString().trim() : null,
                 sellingPrice,
+                product_date || null,
+                expiry_date || null,
                 clientId,
                 id,
             ]

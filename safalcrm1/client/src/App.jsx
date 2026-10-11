@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import LoginPage from "./pages/Login";
 import DashboardPage from "./pages/Dashboard";
@@ -9,6 +9,7 @@ import BOMPage from "./pages/BOM";
 import ProductionPage from "./pages/Production";
 import OrdersPage from "./pages/Orders";
 import ReportsPage from "./pages/Reports";
+import AdminListsPage from "./pages/Lists";
 import "./App.css";
 
 const pages = {
@@ -20,11 +21,18 @@ const pages = {
   Production: ProductionPage,
   Orders: OrdersPage,
   Reports: ReportsPage,
+  Records: AdminListsPage,
 };
 
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [activePage, setActivePage] = useState("Dashboard");
+  const [editRecord, setEditRecord] = useState(null);
+  const requestEdit = useCallback((page, record) => {
+    setEditRecord({ type: page, value: record });
+    setActivePage(page);
+  }, []);
+  const consumeEditRecord = useCallback(() => setEditRecord(null), []);
 
   if (!authenticated) {
     return <LoginPage onLogin={() => setAuthenticated(true)} />;
@@ -36,8 +44,9 @@ function App() {
     <div className="app-shell">
       <Sidebar
         activePage={activePage}
-        onSelect={setActivePage}
+        onSelect={(page) => { setEditRecord(null); setActivePage(page); }}
         onLogout={() => {
+          setEditRecord(null);
           setActivePage("Dashboard");
           setAuthenticated(false);
         }}
@@ -45,7 +54,12 @@ function App() {
       <div className="app-content">
         <main className="page-container">
           <div className="page-view dashboard-page">
-            <ActivePage onNavigate={setActivePage} />
+            <ActivePage
+              onNavigate={setActivePage}
+              onEditRequest={requestEdit}
+              editRecord={editRecord}
+              onEditConsumed={consumeEditRecord}
+            />
           </div>
         </main>
       </div>

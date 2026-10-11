@@ -16,6 +16,8 @@ const mapMaterial = (row) => ({
     unit: row.unit,
     current_stock: row.current_stock,
     minimum_stock: row.minimum_stock,
+    vendor_name: row.vendor_name,
+    material_rate: row.material_rate,
     material_source: row.material_source || "OWN",
     client_id: row.client_id,
     client_name: row.client_name || null,
@@ -32,7 +34,7 @@ const materialCodeExists = async(material_code, excludedId = null) => {
     return rows.length > 0;
 };
 
-const validateMaterial = ({ material_code, material_name, category, unit, current_stock, minimum_stock, material_source, client_id }) => {
+const validateMaterial = ({ material_code, material_name, category, unit, current_stock, minimum_stock, vendor_name, material_rate, material_source, client_id }) => {
     const errors = [];
 
     if (!material_code || !material_code.toString().trim()) {
@@ -50,12 +52,16 @@ const validateMaterial = ({ material_code, material_name, category, unit, curren
 
     const currentStock = parseStockValue(current_stock);
     const minimumStock = parseStockValue(minimum_stock);
+    const materialRate = material_rate === undefined || material_rate === null || material_rate === "" ? null : parseStockValue(material_rate);
 
     if (currentStock === null || currentStock < 0) {
         errors.push("Current stock must be a non-negative number.");
     }
     if (minimumStock === null || minimumStock < 0) {
         errors.push("Minimum stock must be a non-negative number.");
+    }
+    if (materialRate !== null && materialRate < 0) {
+        errors.push("Material rate must be a non-negative number.");
     }
 
     const source = String(material_source || "OWN").toUpperCase();
@@ -64,7 +70,7 @@ const validateMaterial = ({ material_code, material_name, category, unit, curren
     if (source === 'CLIENT' && (!Number.isInteger(clientId) || clientId <= 0)) errors.push("A client is required for client-provided material.");
     if (source === 'OWN' && clientId !== null) errors.push("Own material cannot be linked to a client.");
 
-    return { errors, currentStock, minimumStock, source, clientId };
+    return { errors, currentStock, minimumStock, materialRate, source, clientId };
 };
 
 const clientExists = async(id) => {
@@ -90,14 +96,16 @@ exports.getMaterials = async(req, res) => {
 };
 
 exports.createMaterial = async(req, res) => {
-    const { material_code, material_name, category, unit, current_stock, minimum_stock, material_source, client_id } = req.body;
-    const { errors, currentStock, minimumStock, source, clientId } = validateMaterial({
+    const { material_code, material_name, category, unit, current_stock, minimum_stock, vendor_name, material_rate, material_source, client_id } = req.body;
+    const { errors, currentStock, minimumStock, materialRate, source, clientId } = validateMaterial({
         material_code,
         material_name,
         category,
         unit,
         current_stock,
         minimum_stock,
+        vendor_name,
+        material_rate,
         material_source,
         client_id,
     });
@@ -113,13 +121,15 @@ exports.createMaterial = async(req, res) => {
         if (clientId && !(await clientExists(clientId))) return res.status(400).json({ message: "Client is invalid." });
 
         const [result] = await db.query(
-            "INSERT INTO materials (material_code, material_name, category, unit, current_stock, minimum_stock, material_source, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", [
+            "INSERT INTO materials (material_code, material_name, category, unit, current_stock, minimum_stock, vendor_name, material_rate, material_source, client_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", [
                 material_code.toString().trim(),
                 material_name.toString().trim(),
                 category.toString().trim(),
                 unit.toString().trim(),
                 currentStock,
                 minimumStock,
+                vendor_name ? vendor_name.toString().trim() : null,
+                materialRate,
                 source,
                 source === 'CLIENT' ? clientId : null,
             ]
@@ -135,14 +145,16 @@ exports.createMaterial = async(req, res) => {
 
 exports.updateMaterial = async(req, res) => {
     const { id } = req.params;
-    const { material_code, material_name, category, unit, current_stock, minimum_stock, material_source, client_id } = req.body;
-    const { errors, currentStock, minimumStock, source, clientId } = validateMaterial({
+    const { material_code, material_name, category, unit, current_stock, minimum_stock, vendor_name, material_rate, material_source, client_id } = req.body;
+    const { errors, currentStock, minimumStock, materialRate, source, clientId } = validateMaterial({
         material_code,
         material_name,
         category,
         unit,
         current_stock,
         minimum_stock,
+        vendor_name,
+        material_rate,
         material_source,
         client_id,
     });
@@ -163,13 +175,15 @@ exports.updateMaterial = async(req, res) => {
         if (clientId && !(await clientExists(clientId))) return res.status(400).json({ message: "Client is invalid." });
 
         await db.query(
-            "UPDATE materials SET material_code = ?, material_name = ?, category = ?, unit = ?, current_stock = ?, minimum_stock = ?, material_source = ?, client_id = ? WHERE id = ?", [
+            "UPDATE materials SET material_code = ?, material_name = ?, category = ?, unit = ?, current_stock = ?, minimum_stock = ?, vendor_name = ?, material_rate = ?, material_source = ?, client_id = ? WHERE id = ?", [
                 material_code.toString().trim(),
                 material_name.toString().trim(),
                 category.toString().trim(),
                 unit.toString().trim(),
                 currentStock,
                 minimumStock,
+                vendor_name ? vendor_name.toString().trim() : null,
+                materialRate,
                 source,
                 source === 'CLIENT' ? clientId : null,
                 id,

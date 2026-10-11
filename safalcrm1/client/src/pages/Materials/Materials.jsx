@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { fetchJson, postJson, putJson, deleteJson } from "../../services/api";
+import { fetchJson, postJson, putJson } from "../../services/api";
 import PageIntro from "../../components/PageIntro";
+import SearchResults from "../../components/SearchResults";
 
 const emptyMaterial = {
   material_code: "",
@@ -9,31 +10,32 @@ const emptyMaterial = {
   unit: "",
   current_stock: "",
   minimum_stock: "",
+  vendor_name: "",
+  material_rate: "",
   material_source: "OWN",
   client_id: "",
 };
 
-const Materials = () => {
+const Materials = ({ editRecord, onEditConsumed }) => {
   const [materials, setMaterials] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [loadError, setLoadError] = useState("");
   const [success, setSuccess] = useState("");
   const [query, setQuery] = useState("");
+  const [appliedQuery, setAppliedQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
   const [form, setForm] = useState(emptyMaterial);
   const [editingId, setEditingId] = useState(null);
 
   const loadMaterials = useCallback(async () => {
     setLoading(true);
-    setLoadError("");
     try {
       const data = await fetchJson(`/materials${showArchived ? "?archived=true" : ""}`);
       setMaterials(Array.isArray(data) ? data : []);
     } catch (err) {
-      setLoadError(err.message || "Unable to load materials.");
+      setError(err.message || "Unable to load materials.");
     } finally {
       setLoading(false);
     }
@@ -81,6 +83,9 @@ const Materials = () => {
     if (!Number.isFinite(minimumStock) || minimumStock < 0) {
       return "Minimum stock must be a non-negative number.";
     }
+    if (form.material_rate !== "" && (!Number.isFinite(Number(form.material_rate)) || Number(form.material_rate) < 0)) {
+      return "Material rate must be a non-negative number.";
+    }
     return "";
   };
 
@@ -103,6 +108,8 @@ const Materials = () => {
         unit: form.unit.trim(),
         current_stock: Number(form.current_stock),
         minimum_stock: Number(form.minimum_stock),
+        vendor_name: form.vendor_name.trim(),
+        material_rate: form.material_rate === "" ? null : Number(form.material_rate),
         material_source: form.material_source,
         client_id: form.material_source === "CLIENT" ? Number(form.client_id) : null,
       };
@@ -123,7 +130,7 @@ const Materials = () => {
     }
   };
 
-  const handleEdit = (material) => {
+  const handleEdit = useCallback((material) => {
     setForm({
       material_code: material.material_code || "",
       material_name: material.material_name || "",
@@ -131,71 +138,32 @@ const Materials = () => {
       unit: material.unit || "",
       current_stock: material.current_stock?.toString() ?? "",
       minimum_stock: material.minimum_stock?.toString() ?? "",
+      vendor_name: material.vendor_name || "",
+      material_rate: material.material_rate?.toString() ?? "",
       material_source: material.material_source || "OWN",
       client_id: material.client_id?.toString() ?? "",
     });
     setEditingId(material.id);
     setError("");
     setSuccess("");
-  };
+  }, []);
 
-  const handleDelete = async (material) => {
-    const confirmed = window.confirm(
-      `Archive material ${material.material_code}? It will leave active inventory and cannot be used for new BOMs. Existing production history will be preserved.`
-    );
-    if (!confirmed) return;
-    setError("");
-    setSuccess("");
-
-    try {
-      await deleteJson(`/materials/${material.id}`);
-      setSuccess("Material archived successfully.");
-      if (editingId === material.id) {
-        resetForm();
-      }
-      await loadMaterials();
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (editRecord?.type === "Materials") {
+      handleEdit(editRecord.value);
+      onEditConsumed?.();
     }
-  };
-
-  const handleRestore = async (material) => {
-    setError("");
-    setSuccess("");
-    try {
-      await putJson(`/materials/${material.id}/restore`, {});
-      setSuccess("Material restored successfully.");
-      await loadMaterials();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const handlePermanentlyDelete = async (material) => {
-    const confirmed = window.confirm(
-      `Permanently delete ${material.material_code}? This cannot be undone and will also remove its BOM entries. Materials with production history cannot be permanently deleted.`
-    );
-    if (!confirmed) return;
-
-    setError("");
-    setSuccess("");
-    try {
-      await deleteJson(`/materials/${material.id}/permanent`);
-      setSuccess("Material permanently deleted.");
-      await loadMaterials();
-    } catch (err) {
-      setError(err.message);
-    }
-  };
+  }, [editRecord, handleEdit, onEditConsumed]);
 
   const filtered = materials.filter((material) => {
-    const q = query.trim().toLowerCase();
+    const q = appliedQuery.trim().toLowerCase();
     if (!q) return true;
     return [
       material.material_code,
       material.material_name,
       material.category,
       material.unit,
+      material.vendor_name,
     ]
       .filter(Boolean)
       .some((value) => value.toString().toLowerCase().includes(q));
@@ -203,24 +171,44 @@ const Materials = () => {
 
   return (
     <div>
-      <PageIntro eyebrow="Inventory control" title="Materials & Inventory" description="Manage raw materials, stock levels, and inventory settings." />
-
-      <div className="toolbar">
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+      <PageIntro title="Materials & Inventory" />
+      <div className="toolbar search-toolbar">
+        <div className="toolbar-actions">
           <button className="btn primary" type="button" onClick={resetForm}>
             {editingId ? "New Material" : "Add Material"}
           </button>
+          <form className="search-control" onSubmit={(event) => { event.preventDefault(); setAppliedQuery(query); }}>
           <input
+            type="search"
             className="search"
-            placeholder="Search materials by code, name, category, or unit"
+            aria-label="Search materials"
+            placeholder="Search code, name, category, vendor..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+            <button type="submit" className="btn secondary search-submit">Search</button>
+          </form>
           <button className="btn" type="button" onClick={() => setShowArchived((current) => !current)}>
             {showArchived ? "Show Active Materials" : "Show Archived Materials"}
           </button>
         </div>
       </div>
+
+      <SearchResults
+        query={appliedQuery}
+        title="Material search results"
+        loading={loading}
+        results={filtered.map((material) => ({
+          id: material.id,
+          label: `${material.material_code || ""} ${material.material_name || "Unnamed material"}`.trim(),
+          detail: [
+            material.category,
+            material.unit,
+            material.vendor_name,
+            material.current_stock != null ? `Stock: ${material.current_stock}` : null,
+          ].filter(Boolean).join(" · "),
+        }))}
+      />
 
       {(error || success) && (
         <div style={{ marginBottom: "16px" }}>
@@ -258,6 +246,14 @@ const Materials = () => {
               <input type="text" value={form.unit} onChange={handleChange("unit")} required />
             </div>
             <div className="form-group">
+              <label>Vendor Name</label>
+              <input type="text" value={form.vendor_name} onChange={handleChange("vendor_name")} />
+            </div>
+            <div className="form-group">
+              <label>Material Rate (per unit)</label>
+              <input type="number" min="0" step="any" value={form.material_rate} onChange={handleChange("material_rate")} />
+            </div>
+            <div className="form-group">
               <label>Current Stock *</label>
               <input type="number" min="0" step="any" value={form.current_stock} onChange={handleChange("current_stock")} required />
             </div>
@@ -289,73 +285,6 @@ const Materials = () => {
         </div>
       </form>
 
-      <section className="page-body">
-        {loading ? (
-          <div className="empty-state">Loading materials…</div>
-        ) : loadError ? (
-          <div className="empty-state">Unable to load materials: {loadError}</div>
-        ) : filtered.length === 0 ? (
-          <div className="empty-state">No materials found.</div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Material</th>
-                  <th>Category</th>
-                  <th>Source / Client</th>
-                  <th>Unit</th>
-                  <th>Current Stock</th>
-                  <th>Minimum Stock</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((material) => {
-                  const currentStock = Number(material.current_stock ?? 0);
-                  const minimumStock = Number(material.minimum_stock ?? 0);
-                  const status = currentStock <= 0 ? "Out of Stock" : currentStock <= minimumStock ? "Low Stock" : "In Stock";
-                  return (
-                    <tr key={material.id || material.material_code}>
-                      <td>{material.material_code || "—"}</td>
-                      <td>{material.material_name || "—"}</td>
-                      <td>{material.category || "—"}</td>
-                      <td>{material.material_source === "CLIENT" ? `Client · ${material.client_name || "Client not set"}` : "Own"}</td>
-                      <td>{material.unit || "—"}</td>
-                      <td>{material.current_stock ?? "—"}</td>
-                      <td>{material.minimum_stock ?? "—"}</td>
-                      <td>{status}</td>
-                      <td>
-                        {showArchived ? (
-                          <>
-                            <button type="button" className="btn" onClick={() => handleRestore(material)}>
-                              Restore
-                            </button>
-                            <button type="button" className="btn danger" onClick={() => handlePermanentlyDelete(material)}>
-                              Permanently Delete
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button type="button" className="btn" onClick={() => handleEdit(material)}>
-                              Edit
-                            </button>
-                            <button type="button" className="btn danger" onClick={() => handleDelete(material)}>
-                              Archive
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </div>
   );
 };

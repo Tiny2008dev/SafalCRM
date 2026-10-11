@@ -6,10 +6,18 @@ const validateEmail = (email) => {
     return emailRegex.test(email);
 };
 
+const normalizeGstin = (gstin) => {
+    if (!gstin) return '';
+    return String(gstin).trim().toUpperCase();
+};
+
 const mapClient = (row) => ({
     id: row.id,
     client_name: row.name,
     company_name: row.company_name,
+    gstin: row.gstin,
+    office_address: row.office_address || row.address,
+    godown_address: row.godown_address,
     phone: row.phone,
     email: row.email,
     address: row.address,
@@ -28,7 +36,8 @@ exports.getClients = async (req, res) => {
 };
 
 exports.createClient = async (req, res) => {
-    const { client_name, company_name, phone, email, address, city } = req.body;
+    const { client_name, company_name, gstin, office_address, godown_address, phone, email, city } = req.body;
+    const normalizedGstin = normalizeGstin(gstin);
 
     if (!client_name) {
         return res.status(400).json({ message: "Client name is required." });
@@ -36,14 +45,17 @@ exports.createClient = async (req, res) => {
     if (!phone) {
         return res.status(400).json({ message: "Phone is required." });
     }
+    if (gstin && !/^[0-9A-Z]{15}$/.test(normalizedGstin)) {
+        return res.status(400).json({ message: "GSTIN must be 15 characters and contain only letters and numbers." });
+    }
     if (email && !validateEmail(email)) {
         return res.status(400).json({ message: "Invalid email format." });
     }
 
     try {
         const [result] = await db.query(
-            "INSERT INTO clients (name, company_name, phone, email, address, city) VALUES (?, ?, ?, ?, ?, ?)",
-            [client_name, company_name, phone, email, address, city]
+            "INSERT INTO clients (name, company_name, gstin, address, office_address, godown_address, phone, email, city) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            [client_name, company_name, normalizedGstin || null, office_address, office_address, godown_address, phone, email, city]
         );
         const [rows] = await db.query("SELECT * FROM clients WHERE id = ?", [result.insertId]);
         res.status(201).json(mapClient(rows[0]));
@@ -55,7 +67,8 @@ exports.createClient = async (req, res) => {
 
 exports.updateClient = async (req, res) => {
     const { id } = req.params;
-    const { client_name, company_name, phone, email, address, city } = req.body;
+    const { client_name, company_name, gstin, office_address, godown_address, phone, email, city } = req.body;
+    const normalizedGstin = normalizeGstin(gstin);
 
     if (!client_name) {
         return res.status(400).json({ message: "Client name is required." });
@@ -63,14 +76,17 @@ exports.updateClient = async (req, res) => {
     if (!phone) {
         return res.status(400).json({ message: "Phone is required." });
     }
+    if (gstin && !/^[0-9A-Z]{15}$/.test(normalizedGstin)) {
+        return res.status(400).json({ message: "GSTIN must be 15 characters and contain only letters and numbers." });
+    }
     if (email && !validateEmail(email)) {
         return res.status(400).json({ message: "Invalid email format." });
     }
 
     try {
         const [result] = await db.query(
-            "UPDATE clients SET name = ?, company_name = ?, phone = ?, email = ?, address = ?, city = ? WHERE id = ?",
-            [client_name, company_name, phone, email, address, city, id]
+            "UPDATE clients SET name = ?, company_name = ?, gstin = ?, address = ?, office_address = ?, godown_address = ?, phone = ?, email = ?, city = ? WHERE id = ?",
+            [client_name, company_name, normalizedGstin || null, office_address, office_address, godown_address, phone, email, city, id]
         );
         if (result.affectedRows === 0) {
             return res.status(404).json({ message: "Client not found." });

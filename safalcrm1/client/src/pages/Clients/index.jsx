@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { fetchJson, postJson, putJson, deleteJson } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { fetchJson, postJson, putJson } from '../../services/api';
 import PageIntro from '../../components/PageIntro';
+import SearchResults from '../../components/SearchResults';
 
 const emptyClient = {
   client_name: '',
   company_name: '',
+  gstin: '',
+  office_address: '',
+  godown_address: '',
   phone: '',
   email: '',
-  address: '',
   city: '',
 };
 
-const ClientsPage = () => {
+const ClientsPage = ({ editRecord, onEditConsumed }) => {
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [form, setForm] = useState(emptyClient);
   const [editingId, setEditingId] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -41,14 +45,16 @@ const ClientsPage = () => {
   }, []);
 
   const filteredClients = clients.filter((client) => {
-    const query = search.trim().toLowerCase();
+    const query = appliedSearch.trim().toLowerCase();
     if (!query) return true;
     return [
       client.client_name,
       client.company_name,
+      client.gstin,
+      client.office_address,
+      client.godown_address,
       client.phone,
       client.email,
-      client.address,
       client.city,
     ]
       .filter(Boolean)
@@ -89,54 +95,61 @@ const ClientsPage = () => {
     }
   };
 
-  const handleEdit = (client) => {
+  const handleEdit = useCallback((client) => {
     setForm({
       client_name: client.client_name || '',
       company_name: client.company_name || '',
+      gstin: client.gstin || '',
+      office_address: client.office_address || client.address || '',
+      godown_address: client.godown_address || '',
       phone: client.phone || '',
       email: client.email || '',
-      address: client.address || '',
       city: client.city || '',
     });
     setEditingId(client.id);
     setError('');
     setSuccess('');
-  };
+  }, []);
 
-  const handleDelete = async (client) => {
-    const confirmed = window.confirm(`Delete client ${client.client_name}?`);
-    if (!confirmed) return;
-    setError('');
-    setSuccess('');
-    try {
-      await deleteJson(`/clients/${client.id}`);
-      setSuccess('Client deleted successfully.');
-      if (editingId === client.id) {
-        resetForm();
-      }
-      await loadClients();
-    } catch (err) {
-      setError(err.message);
+  useEffect(() => {
+    if (editRecord?.type === 'Clients') {
+      handleEdit(editRecord.value);
+      onEditConsumed?.();
     }
-  };
+  }, [editRecord, handleEdit, onEditConsumed]);
 
   return (
     <div>
-      <PageIntro eyebrow="Customer workspace" title="Clients" description="Manage your customers and business contacts." />
-
-      <div className="toolbar">
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <PageIntro title="Clients" />
+      <div className="toolbar search-toolbar">
+        <div className="toolbar-actions">
           <button type="button" className="btn primary" onClick={resetForm}>
             {editingId ? 'New Client' : 'Add Client'}
           </button>
+          <form className="search-control" onSubmit={(event) => { event.preventDefault(); setAppliedSearch(search); }}>
           <input
+            type="search"
             className="search"
-            placeholder="Search clients"
+            aria-label="Search clients"
+            placeholder="Search clients by name, company, GSTIN..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+            <button type="submit" className="btn secondary search-submit">Search</button>
+          </form>
         </div>
       </div>
+
+      <SearchResults
+        query={appliedSearch}
+        title="Client search results"
+        loading={loading}
+        results={filteredClients.map((client) => ({
+          id: client.id,
+          label: client.client_name || 'Unnamed client',
+          detail: [client.company_name, client.gstin, client.phone, client.city].filter(Boolean).join(' · '),
+        }))}
+      />
 
       {(error || success) && (
         <div style={{ marginBottom: '16px' }}>
@@ -174,6 +187,10 @@ const ClientsPage = () => {
               <input type="text" value={form.company_name} onChange={handleChange('company_name')} />
             </div>
             <div className="form-group">
+              <label>GSTIN</label>
+              <input type="text" value={form.gstin} onChange={handleChange('gstin')} placeholder="27ABCDE1234F1Z5" />
+            </div>
+            <div className="form-group">
               <label>Phone *</label>
               <input type="text" value={form.phone} onChange={handleChange('phone')} required />
             </div>
@@ -182,8 +199,12 @@ const ClientsPage = () => {
               <input type="email" value={form.email} onChange={handleChange('email')} />
             </div>
             <div className="form-group">
-              <label>Address</label>
-              <input type="text" value={form.address} onChange={handleChange('address')} />
+              <label>Office Address</label>
+              <input type="text" value={form.office_address} onChange={handleChange('office_address')} />
+            </div>
+            <div className="form-group">
+              <label>Godown Address</label>
+              <input type="text" value={form.godown_address} onChange={handleChange('godown_address')} />
             </div>
             <div className="form-group">
               <label>City</label>
@@ -204,49 +225,6 @@ const ClientsPage = () => {
         </div>
       </form>
 
-      <section>
-        {loading ? (
-          <div className="empty-state">Loading clients…</div>
-        ) : filteredClients.length === 0 ? (
-          <div className="empty-state">No clients found.</div>
-        ) : (
-          <div className="table-responsive">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Client Name</th>
-                  <th>Company</th>
-                  <th>Phone</th>
-                  <th>Email</th>
-                  <th>Address</th>
-                  <th>City</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredClients.map((client) => (
-                  <tr key={client.id}>
-                    <td>{client.client_name}</td>
-                    <td>{client.company_name || '—'}</td>
-                    <td>{client.phone}</td>
-                    <td>{client.email || '—'}</td>
-                    <td>{client.address || '—'}</td>
-                    <td>{client.city || '—'}</td>
-                    <td>
-                      <button type="button" className="btn" onClick={() => handleEdit(client)}>
-                        Edit
-                      </button>
-                      <button type="button" className="btn danger" onClick={() => handleDelete(client)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </div>
   );
 };
