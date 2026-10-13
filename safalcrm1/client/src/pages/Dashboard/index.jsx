@@ -19,7 +19,7 @@ const DashboardPage = ({ onNavigate }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
-  const [updatedAt, setUpdatedAt] = useState(null);
+
 
   const loadDashboard = useCallback(async (background = false) => {
     if (background) setRefreshing(true);
@@ -27,7 +27,7 @@ const DashboardPage = ({ onNavigate }) => {
     setError("");
     try {
       setDashboard(await fetchJson("/dashboard"));
-      setUpdatedAt(new Date());
+
     } catch (err) {
       console.error("Dashboard loading error:", err);
       setError(err.message || "Dashboard data is not available.");
