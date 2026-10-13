@@ -1,14 +1,19 @@
-
 pipeline {
     agent any
 
+    tools {
+        nodejs 'NodeJS'
+    }
+
     environment {
-        PATH = "C:\\Program Files\\nodejs;${env.PATH}"
+        CI = 'true'
     }
 
     stages {
         stage('Checkout') {
             steps {
+                git branch: 'master',
+                    url: 'https://github.com/Tiny2008dev/SafalCRM.git'
                 echo 'Source code retrieved from GitHub.'
             }
         }
@@ -17,12 +22,13 @@ pipeline {
             steps {
                 bat 'node --version'
                 bat 'npm --version'
+                bat 'python --version'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Install Client Dependencies') {
             steps {
-                dir('client') {
+                dir('safalcrm1/client') {
                     bat 'npm install'
                 }
             }
@@ -30,8 +36,24 @@ pipeline {
 
         stage('Build React App') {
             steps {
-                dir('client') {
+                dir('safalcrm1/client') {
                     bat 'npm run build'
+                }
+            }
+        }
+
+        stage('Install Server Dependencies') {
+            steps {
+                dir('safalcrm1/server') {
+                    bat 'npm install'
+                }
+            }
+        }
+
+        stage('Run Backend Tests') {
+            steps {
+                dir('safalcrm1/server') {
+                    bat 'npm test'
                 }
             }
         }
@@ -39,8 +61,9 @@ pipeline {
 
     post {
         success {
-            echo 'SafalCRM frontend built successfully!'
+            echo 'SafalCRM frontend built and backend tests passed!'
         }
+
         failure {
             echo 'Pipeline failed. Check Console Output.'
         }
