@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+
+import React, { useState, useEffect, useCallback } from "react";
 import { fetchJson, postJson, putJson, deleteJson } from "../../services/api";
 
 const emptyForm = {
@@ -20,25 +21,28 @@ const BOM = () => {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
 
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const data = await fetchJson("/products");
       const list = Array.isArray(data) ? data : [];
       setProducts(list);
+
       if (!selectedProduct && list.length > 0) {
         setSelectedProduct(String(list[0].id));
       }
     } catch (err) {
       setError(err.message || "Unable to load products.");
     }
-  };
+  }, [selectedProduct]);
 
   const loadMaterials = async () => {
     try {
       const data = await fetchJson("/materials");
       setMaterials(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError((current) => current || (err.message || "Unable to load materials."));
+      setError(
+        (current) => current || (err.message || "Unable to load materials.")
+      );
     }
   };
 
@@ -50,6 +54,7 @@ const BOM = () => {
 
     setLoading(true);
     setError("");
+
     try {
       const data = await fetchJson(`/bom/${productId}`);
       setBomItems(Array.isArray(data) ? data : []);
@@ -64,11 +69,14 @@ const BOM = () => {
   useEffect(() => {
     loadProducts();
     loadMaterials();
-  }, []);
+  }, [loadProducts]);
 
   useEffect(() => {
     if (selectedProduct) {
-      setForm((current) => ({ ...current, product_id: String(selectedProduct) }));
+      setForm((current) => ({
+        ...current,
+        product_id: String(selectedProduct),
+      }));
       loadBom(selectedProduct);
     } else {
       setBomItems([]);
@@ -94,11 +102,13 @@ const BOM = () => {
     if (!form.product_id || Number(form.product_id) <= 0) {
       return "Product is required.";
     }
+
     if (!form.material_id || Number(form.material_id) <= 0) {
       return "Material is required.";
     }
 
     const quantity = Number(form.quantity_required);
+
     if (!Number.isFinite(quantity) || quantity <= 0) {
       return "Quantity must be greater than 0.";
     }
@@ -112,12 +122,14 @@ const BOM = () => {
     setSuccess("");
 
     const validationError = validateForm();
+
     if (validationError) {
       setError(validationError);
       return;
     }
 
     setSaving(true);
+
     try {
       const payload = {
         product_id: Number(form.product_id),
@@ -134,6 +146,7 @@ const BOM = () => {
       }
 
       resetForm();
+
       if (selectedProduct) {
         await loadBom(selectedProduct);
       }
@@ -150,23 +163,30 @@ const BOM = () => {
       material_id: String(item.material_id || ""),
       quantity_required: String(item.quantity_required ?? ""),
     });
+
     setEditingId(item.id);
     setError("");
     setSuccess("");
   };
 
   const handleDelete = async (item) => {
-    const confirmed = window.confirm(`Remove this BOM item for ${item.material_name || "material"}?`);
+    const confirmed = window.confirm(
+      `Remove this BOM item for ${item.material_name || "material"}?`
+    );
+
     if (!confirmed) return;
 
     setError("");
     setSuccess("");
+
     try {
       await deleteJson(`/bom/${item.id}`);
       setSuccess("BOM item deleted successfully.");
+
       if (editingId === item.id) {
         resetForm();
       }
+
       if (selectedProduct) {
         await loadBom(selectedProduct);
       }
@@ -175,10 +195,14 @@ const BOM = () => {
     }
   };
 
-  const productName = products.find((product) => String(product.id) === String(selectedProduct))?.product_name || "";
+  const productName =
+    products.find(
+      (product) => String(product.id) === String(selectedProduct)
+    )?.product_name || "";
 
   const filteredBom = bomItems.filter((item) => {
     const q = query.trim().toLowerCase();
+
     if (!q) return true;
 
     return [item.material_name, item.material_code, item.unit]
@@ -190,14 +214,32 @@ const BOM = () => {
     <div>
       <header className="page-header">
         <h1>Bill of Materials</h1>
-        <p className="muted">Define materials required to build each product.</p>
+        <p className="muted">
+          Define materials required to build each product.
+        </p>
       </header>
 
       <div className="toolbar">
-        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
             <span>Select Product</span>
-            <select value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}>
+            <select
+              value={selectedProduct}
+              onChange={(e) => setSelectedProduct(e.target.value)}
+            >
               <option value="">-- Select Product --</option>
               {products.map((product) => (
                 <option key={product.id} value={product.id}>
@@ -213,7 +255,14 @@ const BOM = () => {
         <div style={{ marginBottom: "16px" }}>
           {error && <div className="empty-state">{error}</div>}
           {success && (
-            <div className="empty-state" style={{ borderColor: "#10b981", background: "#ecfdf5", color: "#065f46" }}>
+            <div
+              className="empty-state"
+              style={{
+                borderColor: "#10b981",
+                background: "#ecfdf5",
+                color: "#065f46",
+              }}
+            >
               {success}
             </div>
           )}
@@ -251,7 +300,11 @@ const BOM = () => {
 
             <div className="form-group">
               <label>Material *</label>
-              <select value={form.material_id} onChange={handleChange("material_id")} required>
+              <select
+                value={form.material_id}
+                onChange={handleChange("material_id")}
+                required
+              >
                 <option value="">-- Select Material --</option>
                 {materials.map((material) => (
                   <option key={material.id} value={material.id}>
@@ -276,8 +329,16 @@ const BOM = () => {
         </div>
 
         <div className="card-footer" style={{ justifyContent: "flex-end" }}>
-          <button type="submit" className="btn primary" disabled={saving || !selectedProduct}>
-            {saving ? "Saving…" : editingId ? "Update BOM Item" : "Save BOM Item"}
+          <button
+            type="submit"
+            className="btn primary"
+            disabled={saving || !selectedProduct}
+          >
+            {saving
+              ? "Saving…"
+              : editingId
+                ? "Update BOM Item"
+                : "Save BOM Item"}
           </button>
         </div>
       </form>
@@ -300,7 +361,9 @@ const BOM = () => {
 
             {filteredBom.length === 0 ? (
               <div className="empty-state">
-                {productName ? `No BOM items found for ${productName}.` : "No BOM items found."}
+                {productName
+                  ? `No BOM items found for ${productName}.`
+                  : "No BOM items found."}
               </div>
             ) : (
               <div className="table-responsive">
@@ -320,10 +383,18 @@ const BOM = () => {
                         <td>{item.quantity_required ?? "—"}</td>
                         <td>{item.unit || "—"}</td>
                         <td>
-                          <button type="button" className="btn" onClick={() => handleEdit(item)}>
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={() => handleEdit(item)}
+                          >
                             Edit
                           </button>
-                          <button type="button" className="btn danger" onClick={() => handleDelete(item)}>
+                          <button
+                            type="button"
+                            className="btn danger"
+                            onClick={() => handleDelete(item)}
+                          >
                             Delete
                           </button>
                         </td>
