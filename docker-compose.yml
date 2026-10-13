@@ -1,0 +1,40 @@
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: safalcrm-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: safal_crm
+      MYSQL_USER: safalapp
+      MYSQL_PASSWORD: safalpass123
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/safal_crm.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  backend:
+    build: ./server
+    container_name: safalcrm-backend
+    environment:
+      DB_HOST: mysql
+      DB_USER: safalapp
+      DB_PASSWORD: safalpass123
+      DB_NAME: safal_crm
+      PORT: 5000
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mysql
+
+  frontend:
+    build: ./client
+    container_name: safalcrm-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
