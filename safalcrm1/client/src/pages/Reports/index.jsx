@@ -16,6 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { fetchJson } from "../../services/api";
+import { csvCell } from "./csv";
 
 const currency = (value) => {
   const amount = Number(value ?? 0);
@@ -270,7 +271,7 @@ handleApplyFilters(createDefaultFilters());
       ["Top client", "Sales amount"],
       ...dashboard.salesByClient.map((item) => [item.clientName, currency(item.salesAmount)]),
     ];
-    const csv = rows.map((row) => row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
+    const csv = rows.map((row) => row.map(csvCell).join(",")).join("\n");
     const link = document.createElement("a");
     link.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
     link.download = "safalcrm-report.csv";

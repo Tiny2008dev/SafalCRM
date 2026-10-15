@@ -6,10 +6,10 @@ from time import sleep
 def test_safalcrm_homepage():
     print("SafalCRM Selenium test started")
     
-    options = Options()
+    options = Options() #creates an object for Chrome configuration.
     options.add_experimental_option("excludeSwitches", ["enable-logging"])
 
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Chrome(options=options)#Launch chrome
 
     try:
         driver.get("http://localhost:3000")
@@ -31,4 +31,4 @@ def test_safalcrm_homepage():
 
 
 if __name__ == "__main__":
-    test_safalcrm_homepage()
+    test_safalcrm_homepage()#call function

@@ -1,10 +1,18 @@
+require('dotenv').config();
 const mysql = require('mysql2');
 
+const migrationEnv = {
+    host: process.env.MIGRATION_DB_HOST,
+    user: process.env.MIGRATION_DB_USER,
+    password: process.env.MIGRATION_DB_PASSWORD,
+    database: process.env.MIGRATION_DB_NAME,
+};
+const missing = Object.entries(migrationEnv).filter(([, value]) => !value?.trim()).map(([key]) => `MIGRATION_DB_${key.toUpperCase()}`);
+if (missing.length) throw new Error(`Set migration-only credentials in protected environment configuration: ${missing.join(', ')}.`);
+if (migrationEnv.user.trim().toLowerCase() === 'root') throw new Error('Use a dedicated migration identity instead of MySQL root.');
+
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'Abc@123456789',
-    database: process.env.DB_NAME || 'safal_crm',
+    ...migrationEnv,
     waitForConnections: true,
     connectionLimit: 10,
 });

@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(100) NOT NULL UNIQUE,
   email VARCHAR(150) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
-  role VARCHAR(50) NOT NULL DEFAULT "admin",
+  role VARCHAR(50) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -113,5 +113,5 @@ CREATE TABLE IF NOT EXISTS sales_items (
   FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
 );
 
-INSERT IGNORE INTO users (username, email, password, role) VALUES
-  ("admin", "admin@safalcrm.com", "admin123", "admin");
+-- Administrator accounts are provisioned explicitly with a scrypt password hash.
+-- See server/scripts/provision_admin.js. Never seed a shared/default password.

@@ -9,6 +9,7 @@ const sidebarItems = [
   "Production",
   "Orders",
   "Records",
+  "Enquiries",
   "Reports",
 ];
 

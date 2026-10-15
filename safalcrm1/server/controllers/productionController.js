@@ -197,6 +197,9 @@ exports.createProductionOrder = async(req, res) => {
             message: "Production quantity must be greater than 0.",
         });
     }
+    if (status !== undefined && status !== "Pending") {
+        return res.status(400).json({ message: "New production orders must start in Pending status." });
+    }
 
     try {
         if (!(await productExists(parsedProductId))) {
@@ -242,13 +245,7 @@ exports.createProductionOrder = async(req, res) => {
             });
         }
 
-        const safeStatus = [
-                "Pending",
-                "Completed",
-                "Cancelled",
-            ].includes(status) ?
-            status :
-            "Pending";
+        const safeStatus = "Pending";
 
         const productionDate =
             production_date ||
@@ -330,272 +327,98 @@ exports.createProductionOrder = async(req, res) => {
 exports.updateProductionOrder = async(req, res) => {
     const { id } = req.params;
     const { status } = req.body;
+    if (!['Completed', 'Cancelled'].includes(status)) {
+        return res.status(400).json({ message: 'Only a Pending order can transition to Completed or Cancelled.' });
+    }
 
+    let connection;
+    let transactionOpen = false;
     try {
-        // Get the production order
-        const [orders] = await db.query(
-            `SELECT
-                po.*,
-                p.product_name
-             FROM production_orders po
-             LEFT JOIN products p
-                ON p.id = po.product_id
-             WHERE po.id = ?`, [id]
-        );
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+        transactionOpen = true;
 
-        if (orders.length === 0) {
-            return res.status(404).json({
-                message: "Production order not found.",
-            });
+        // The parent row is locked first so concurrent status changes serialize here.
+        const [orders] = await connection.query(
+            'SELECT id, status FROM production_orders WHERE id = ? FOR UPDATE', [id]
+        );
+        if (!orders.length) {
+            await connection.rollback();
+            transactionOpen = false;
+            return res.status(404).json({ message: 'Production order not found.' });
+        }
+        if (orders[0].status !== 'Pending') {
+            await connection.rollback();
+            transactionOpen = false;
+            return res.status(409).json({ message: `Order in ${orders[0].status} status cannot transition to ${status}.` });
         }
 
-        const order = orders[0];
-
-        /*
-         * Only perform inventory deduction when
-         * changing a Pending order to Completed.
-         */
-        if (status === "Completed") {
-
-            // Prevent duplicate inventory deduction
-            if (order.status === "Completed") {
-                return res.status(400).json({
-                    message: "Production order is already completed.",
-                });
-            }
-
-            if (order.status === "Cancelled") {
-                return res.status(400).json({
-                    message: "Cancelled production orders cannot be completed.",
-                });
-            }
-
-            const connection = await db.getConnection();
-
-            try {
-                await connection.beginTransaction();
-
-                /*
-                 * Get production items and lock the corresponding
-                 * material rows while checking stock.
-                 */
-                const [items] = await connection.query(
-                    `SELECT
-                        pi.id,
-                        pi.material_id,
-                        pi.required_quantity,
-                        pi.consumed_quantity,
-                        m.material_name,
-                        m.material_code,
-                        m.unit,
-                        m.current_stock
-                     FROM production_items pi
-                     INNER JOIN materials m
-                        ON m.id = pi.material_id
-                     WHERE pi.production_order_id = ?
-                     FOR UPDATE`, [id]
-                );
-
-                if (items.length === 0) {
-                    await connection.query(
-                        `UPDATE production_orders
-                         SET status = 'Completed'
-                         WHERE id = ?`, [id]
-                    );
-
-                    await connection.commit();
-
-                    const [updatedOrders] = await db.query(
-                        `SELECT
-                            po.*,
-                            p.product_name
-                         FROM production_orders po
-                         LEFT JOIN products p
-                            ON p.id = po.product_id
-                         WHERE po.id = ?`, [id]
-                    );
-
-                    const updatedItems =
-                        await getProductionItems(id);
-
-                    return res.json({
-                        ...mapOrder(updatedOrders[0]),
-                        items: updatedItems.map(mapOrderItem),
-                    });
-                }
-
-                /*
-                 * Check ALL materials before deducting anything.
-                 */
-                const shortages = [];
-
-                for (const item of items) {
-                    const required = Number(
-                        item.required_quantity || 0
-                    );
-
-                    const available = Number(
-                        item.current_stock || 0
-                    );
-
-                    if (required > available) {
-                        shortages.push({
-                            material_name: item.material_name,
-                            material_code: item.material_code,
-                            required,
-                            available,
-                            shortage: required - available,
-                            unit: item.unit,
-                        });
-                    }
-                }
-
-                /*
-                 * If even one material is short,
-                 * cancel the entire operation.
-                 */
-                if (shortages.length > 0) {
-                    await connection.rollback();
-
-                    const first = shortages[0];
-
-                    return res.status(400).json({
-                        message: `Insufficient stock for ${first.material_name}. ` +
-                            `Required: ${first.required} ${first.unit}, ` +
-                            `Available: ${first.available} ${first.unit}, ` +
-                            `Shortage: ${first.shortage} ${first.unit}.`,
-                        shortages,
-                    });
-                }
-
-                /*
-                 * Deduct inventory.
-                 */
-                for (const item of items) {
-                    const required = Number(
-                        item.required_quantity || 0
-                    );
-
-                    await connection.query(
-                        `UPDATE materials
-                         SET current_stock = current_stock - ?
-                         WHERE id = ?`, [
-                            required,
-                            item.material_id,
-                        ]
-                    );
-
-                    /*
-                     * Mark material consumption as completed.
-                     */
-                    await connection.query(
-                        `UPDATE production_items
-                         SET consumed_quantity = ?,
-                             status = 'Completed'
-                         WHERE id = ?`, [
-                            required,
-                            item.id,
-                        ]
-                    );
-                }
-
-                /*
-                 * Mark production order as Completed.
-                 */
-                await connection.query(
-                    `UPDATE production_orders
-                     SET status = 'Completed'
-                     WHERE id = ?`, [id]
-                );
-
-                await connection.commit();
-
-                /*
-                 * Return updated production order.
-                 */
-                const [updatedOrders] = await db.query(
-                    `SELECT
-                        po.*,
-                        p.product_name
-                     FROM production_orders po
-                     LEFT JOIN products p
-                        ON p.id = po.product_id
-                     WHERE po.id = ?`, [id]
-                );
-
-                const updatedItems =
-                    await getProductionItems(id);
-
-                return res.json({
-                    ...mapOrder(updatedOrders[0]),
-                    items: updatedItems.map(mapOrderItem),
-                });
-
-            } catch (error) {
+        if (status === 'Completed') {
+            const [items] = await connection.query(
+                `SELECT pi.id, pi.material_id, pi.required_quantity, pi.consumed_quantity, pi.status AS item_status,
+                        m.material_name, m.material_code, m.unit, m.current_stock
+                 FROM production_items pi
+                 INNER JOIN materials m ON m.id = pi.material_id
+                 WHERE pi.production_order_id = ?
+                 ORDER BY m.id ASC
+                 FOR UPDATE`, [id]
+            );
+            if (items.some((item) => item.item_status === 'Completed' || Number(item.consumed_quantity || 0) !== 0)) {
                 await connection.rollback();
-                throw error;
-            } finally {
-                connection.release();
+                transactionOpen = false;
+                return res.status(409).json({ message: 'Inventory for this production order has already been consumed.' });
+            }
+            const shortages = items.filter((item) => Number(item.required_quantity || 0) > Number(item.current_stock || 0)).map((item) => ({
+                material_name: item.material_name,
+                material_code: item.material_code,
+                required: Number(item.required_quantity || 0),
+                available: Number(item.current_stock || 0),
+                shortage: Number(item.required_quantity || 0) - Number(item.current_stock || 0),
+                unit: item.unit,
+            }));
+            if (shortages.length) {
+                await connection.rollback();
+                transactionOpen = false;
+                const first = shortages[0];
+                return res.status(400).json({
+                    message: `Insufficient stock for ${first.material_name}. Required: ${first.required} ${first.unit}, Available: ${first.available} ${first.unit}, Shortage: ${first.shortage} ${first.unit}.`,
+                    shortages,
+                });
+            }
+            for (const item of items) {
+                const [stockUpdate] = await connection.query(
+                    'UPDATE materials SET current_stock = current_stock - ? WHERE id = ? AND current_stock >= ?',
+                    [item.required_quantity, item.material_id, item.required_quantity]
+                );
+                if (stockUpdate.affectedRows !== 1) throw new Error('Material stock changed during production completion.');
+                const [itemUpdate] = await connection.query(
+                    "UPDATE production_items SET consumed_quantity = ?, status = 'Completed' WHERE id = ? AND status <> 'Completed' AND (consumed_quantity = 0 OR consumed_quantity IS NULL)",
+                    [item.required_quantity, item.id]
+                );
+                if (itemUpdate.affectedRows !== 1) throw new Error('Production item was already consumed.');
             }
         }
 
-        /*
-         * Normal status update.
-         * Used for Cancelled or other allowed status changes.
-         */
-        const validStatuses = [
-            "Pending",
-            "Completed",
-            "Cancelled",
-        ];
-
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({
-                message: "Status is invalid.",
-            });
-        }
-
-        const [result] = await db.query(
-            `UPDATE production_orders
-             SET status = ?
-             WHERE id = ?`, [
-                status,
-                id,
-            ]
+        const [orderUpdate] = await connection.query(
+            'UPDATE production_orders SET status = ? WHERE id = ? AND status = \'Pending\'', [status, id]
         );
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                message: "Production order not found.",
-            });
-        }
+        if (orderUpdate.affectedRows !== 1) throw new Error('Production order status changed during update.');
+        await connection.commit();
+        transactionOpen = false;
 
         const [updatedOrders] = await db.query(
-            `SELECT
-                po.*,
-                p.product_name
-             FROM production_orders po
-             LEFT JOIN products p
-                ON p.id = po.product_id
-             WHERE po.id = ?`, [id]
+            `SELECT po.*, p.product_name FROM production_orders po
+             LEFT JOIN products p ON p.id = po.product_id WHERE po.id = ?`, [id]
         );
-
-        const updatedItems =
-            await getProductionItems(id);
-
-        res.json({
-            ...mapOrder(updatedOrders[0]),
-            items: updatedItems.map(mapOrderItem),
-        });
-
+        const updatedItems = await getProductionItems(id);
+        return res.json({ ...mapOrder(updatedOrders[0]), items: updatedItems.map(mapOrderItem) });
     } catch (error) {
-        console.error(
-            "UPDATE PRODUCTION ORDER ERROR:",
-            error
-        );
-
-        res.status(500).json({
-            message: "Unable to update production order.",
-        });
+        if (connection && transactionOpen) {
+            try { await connection.rollback(); } catch (rollbackError) { console.error('Production transaction rollback failed:', rollbackError.message); }
+        }
+        console.error('UPDATE PRODUCTION ORDER ERROR:', error.message);
+        return res.status(500).json({ message: 'Unable to update production order.' });
+    } finally {
+        if (connection) connection.release();
     }
-};;
+};

@@ -323,12 +323,12 @@ const ProductionPage = () => {
                       </span>
                     </td>
                     <td>
-                      {order.status !== 'Completed' && (
+                      {order.status === 'Pending' && (
                         <button type="button" className="btn primary" onClick={() => handleStatusUpdate(order.id, 'Completed')}>
                           Mark Completed
                         </button>
                       )}
-                      {order.status !== 'Cancelled' && (
+                      {order.status === 'Pending' && (
                         <button type="button" className="btn danger" onClick={() => handleStatusUpdate(order.id, 'Cancelled')}>
                           Cancel
                         </button>

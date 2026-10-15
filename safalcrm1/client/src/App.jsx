@@ -10,6 +10,8 @@ import ProductionPage from "./pages/Production";
 import OrdersPage from "./pages/Orders";
 import ReportsPage from "./pages/Reports";
 import AdminListsPage from "./pages/Lists";
+import EnquiriesPage from "./pages/Enquiries";
+import { setAuthToken } from "./services/api";
 import "./App.css";
 
 const pages = {
@@ -22,10 +24,12 @@ const pages = {
   Orders: OrdersPage,
   Reports: ReportsPage,
   Records: AdminListsPage,
+  Enquiries: EnquiriesPage,
 };
 
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [activePage, setActivePage] = useState("Dashboard");
   const [editRecord, setEditRecord] = useState(null);
   const requestEdit = useCallback((page, record) => {
@@ -35,7 +39,7 @@ function App() {
   const consumeEditRecord = useCallback(() => setEditRecord(null), []);
 
   if (!authenticated) {
-    return <LoginPage onLogin={() => setAuthenticated(true)} />;
+    return <LoginPage onLogin={(user) => { setAuthToken(user.token); setUserRole(user.role); setAuthenticated(true); }} />;
   }
 
   const ActivePage = pages[activePage] || DashboardPage;
@@ -46,6 +50,8 @@ function App() {
         activePage={activePage}
         onSelect={(page) => { setEditRecord(null); setActivePage(page); }}
         onLogout={() => {
+          setAuthToken(null);
+          setUserRole(null);
           setEditRecord(null);
           setActivePage("Dashboard");
           setAuthenticated(false);
@@ -58,6 +64,7 @@ function App() {
               onNavigate={setActivePage}
               onEditRequest={requestEdit}
               editRecord={editRecord}
+              userRole={userRole}
               onEditConsumed={consumeEditRecord}
             />
           </div>
