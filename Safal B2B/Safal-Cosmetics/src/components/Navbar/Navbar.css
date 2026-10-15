@@ -1,0 +1,382 @@
+/* =========================================
+   Navbar Wrapper
+========================================= */
+
+.navbar-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+
+  border-bottom: 1px solid var(--line);
+  background: rgba(241, 239, 234, 0.96);
+
+  backdrop-filter: blur(15px);
+
+  transition:
+    box-shadow var(--transition),
+    background var(--transition);
+}
+
+.navbar-wrapper.navbar-scrolled {
+  background: rgba(241, 239, 234, 0.99);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.09);
+}
+
+
+/* =========================================
+   Top Contact Bar
+========================================= */
+
+.top-contact-bar {
+  width: 100%;
+
+  /* Same color as the main navbar */
+  background: rgba(241, 239, 234, 0.96);
+  color: var(--ink);
+
+  /* Separating line between contact bar and navbar */
+  border-bottom: 1px solid var(--line);
+}
+
+.top-contact-inner {
+  max-width: 88rem;
+  min-height: 2.5rem;
+
+  margin: 0 auto;
+  padding: 0 clamp(1.25rem, 4vw, 4rem);
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(1rem, 3vw, 2.5rem);
+}
+
+.top-contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.top-contact-item a {
+  color: var(--ink);
+  text-decoration: none;
+
+  transition: color var(--transition);
+}
+
+.top-contact-item a:hover {
+  color: var(--clay);
+}
+
+.top-contact-icon {
+  color: var(--clay);
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.top-address {
+  max-width: 24rem;
+}
+/* =========================================
+   Main Navbar
+========================================= */
+
+.navbar {
+  position: relative;
+  height: 5.8rem;
+  max-width: 88rem;
+
+  margin: auto;
+  padding: 0 clamp(1.25rem, 4vw, 4rem);
+
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+
+.navbar-brand {
+  width: 11.5rem;
+  flex-shrink: 0;
+}
+
+.navbar-logo {
+  display: block;
+  width: 100%;
+
+  transition: transform var(--transition);
+}
+
+.navbar-brand:hover .navbar-logo {
+  transform: scale(1.035);
+}
+
+
+/* =========================================
+   Navigation Links
+========================================= */
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: clamp(1.1rem, 2.8vw, 2.8rem);
+
+  margin-left: auto;
+}
+
+.navbar-links a {
+  position: relative;
+
+  padding: 0.5rem 0;
+
+  color: var(--ink);
+  font-size: 0.77rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+
+.navbar-links a::after {
+  content: "";
+
+  position: absolute;
+  right: 0;
+  bottom: 0.15rem;
+  left: 0;
+
+  height: 1px;
+
+  background: var(--sand);
+
+  transform: scaleX(0);
+  transform-origin: right;
+
+  transition: transform var(--transition);
+}
+
+.navbar-links a:hover::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.navbar-links .admin-login-link {
+  color: var(--clay);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+
+/* =========================================
+   Request Quote Button
+========================================= */
+
+.quote-btn {
+  min-width: 10.6rem;
+
+  padding: 0.38rem 0.45rem 0.38rem 1rem;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+
+  background: var(--ink);
+  color: var(--paper);
+
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.035em;
+  text-decoration: none;
+
+  transition:
+    transform var(--transition),
+    background var(--transition);
+}
+
+.quote-btn:hover {
+  background: var(--clay);
+  transform: translateY(-2px);
+}
+
+.quote-btn:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.quote-icon {
+  display: grid;
+  place-items: center;
+
+  width: 2.2rem;
+  aspect-ratio: 1;
+
+  background: var(--paper);
+  color: var(--ink);
+
+  font-size: 1.2rem;
+
+  transition: transform var(--transition);
+}
+
+.quote-btn:hover .quote-icon {
+  transform: rotate(45deg);
+}
+
+
+/* =========================================
+   Mobile Menu Button
+========================================= */
+
+.menu-toggle {
+  display: none;
+
+  width: 2.75rem;
+  aspect-ratio: 1;
+
+  border: 1px solid var(--line);
+  background: transparent;
+
+  padding: 0.65rem;
+  cursor: pointer;
+}
+
+.menu-toggle span {
+  display: block;
+
+  height: 1px;
+  margin: 0.28rem 0;
+
+  background: var(--ink);
+}
+
+
+/* =========================================
+   Tablet Responsive
+========================================= */
+
+@media (max-width: 980px) {
+  .top-contact-inner {
+    justify-content: center;
+    gap: 1.2rem;
+  }
+
+  .top-contact-item {
+    font-size: 0.6rem;
+  }
+
+  .top-address {
+    display: none;
+  }
+
+  .navbar {
+    height: 4.8rem;
+    gap: 0.75rem;
+  }
+
+  .navbar-links {
+    display: none;
+  }
+
+  .menu-toggle {
+    display: block;
+    margin-left: auto;
+  }
+
+  .navbar-links.menu-open {
+    position: absolute;
+    z-index: 10;
+
+    top: 100%;
+    left: 0;
+    right: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+
+    padding: 1rem clamp(1.25rem, 4vw, 4rem) 1.3rem;
+
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 14px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .navbar-links a {
+    font-size: 1rem;
+  }
+
+  .quote-btn {
+    min-width: 9rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .navbar {
+    gap: 0.5rem;
+    padding-inline: 1rem;
+  }
+
+  .navbar-brand {
+    width: 9rem;
+  }
+
+  .quote-btn {
+    min-width: auto;
+    padding: 0.38rem;
+  }
+
+  .quote-btn > span:first-child {
+    display: none;
+  }
+
+  .quote-icon {
+    width: 2.3rem;
+  }
+}
+
+
+/* =========================================
+   Small Mobile Screens
+========================================= */
+
+@media (max-width: 470px) {
+  .top-contact-inner {
+    min-height: 2rem;
+    padding-inline: 0.75rem;
+    gap: 0.8rem;
+  }
+
+  .top-contact-item {
+    font-size: 0.55rem;
+  }
+
+  .top-contact-icon {
+    font-size: 0.7rem;
+  }
+
+  .navbar-brand {
+    width: 9rem;
+  }
+
+  .quote-btn {
+    min-width: auto;
+    padding: 0.38rem;
+  }
+
+  .quote-btn > span:first-child {
+    display: none;
+  }
+
+  .quote-icon {
+    width: 2.3rem;
+  }
+
+  .navbar {
+    padding-inline: 1rem;
+  }
+}

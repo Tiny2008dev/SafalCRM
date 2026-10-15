@@ -1,0 +1,279 @@
+.footer {
+  background: #081914;
+  color: #f4f0e8;
+  padding: 70px 7% 24px;
+  margin-top: 80px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle blue glow */
+
+.footer::before {
+  content: "";
+  position: absolute;
+  width: 450px;
+  height: 450px;
+  top: -280px;
+  right: -150px;
+
+  background: rgba(49, 91, 153, 0.16);
+  filter: blur(100px);
+  border-radius: 50%;
+
+  pointer-events: none;
+}
+
+/* MAIN */
+
+.footer-main {
+  max-width: 1400px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1.2fr 1fr;
+  gap: 60px;
+
+  position: relative;
+  z-index: 1;
+}
+
+/* COMPANY */
+
+.footer-company {
+  max-width: 330px;
+}
+
+.footer-logo-box {
+  width: 190px;
+  height: 76px;
+
+  background: #f4f0e8;
+  border-radius: 18px;
+
+  padding: 10px 20px;
+  margin-bottom: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.footer-logo-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.15);
+}
+
+.footer-company p {
+  color: #aeb2bb;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-bottom: 24px;
+}
+
+/* QUOTE BUTTON */
+
+.footer-quote-btn {
+  border: none;
+  cursor: pointer;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 15px;
+
+  background: #315b99;
+  color: white;
+
+  padding: 13px 16px 13px 22px;
+  border-radius: 50px;
+
+  font-size: 0.9rem;
+  font-family: inherit;
+
+  transition: 0.3s ease;
+}
+
+.footer-quote-btn span {
+  width: 30px;
+  height: 30px;
+
+  background: #f4f0e8;
+  color: #111214;
+
+  border-radius: 50%;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 1rem;
+}
+
+.footer-quote-btn:hover {
+  transform: translateY(-3px);
+  background: #3d6cab;
+}
+
+/* COLUMNS */
+
+.footer-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.footer-column h3 {
+  color: #ffffff;
+
+  font-size: 1rem;
+  font-weight: 500;
+
+  margin: 8px 0 22px;
+  letter-spacing: 0.03em;
+}
+
+.footer-column a,
+.footer-column button {
+  background: none;
+  border: none;
+  padding: 0;
+
+  color: #9ea4af;
+  text-decoration: none;
+
+  font-family: inherit;
+  font-size: 0.9rem;
+
+  margin-bottom: 14px;
+  cursor: pointer;
+
+  text-align: left;
+
+  transition: 0.25s ease;
+}
+
+.footer-column a:hover,
+.footer-column button:hover {
+  color: #ffffff;
+  transform: translateX(4px);
+}
+
+/* CONTACT */
+
+.footer-contact p {
+  color: #9ea4af;
+  font-size: 0.9rem;
+  line-height: 1.7;
+
+  margin: 0 0 14px;
+}
+
+/* DIVIDER */
+
+.footer-divider {
+  max-width: 1400px;
+  height: 1px;
+
+  background: rgba(255, 255, 255, 0.1);
+
+  margin: 55px auto 22px;
+
+  position: relative;
+  z-index: 1;
+}
+
+/* BOTTOM */
+
+.footer-bottom {
+  max-width: 1400px;
+  margin: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  position: relative;
+  z-index: 1;
+}
+
+.footer-bottom p {
+  color: #777e89;
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.footer-bottom-links {
+  display: flex;
+  gap: 20px;
+}
+
+.footer-bottom-links a {
+  color: #777e89;
+  text-decoration: none;
+  font-size: 0.78rem;
+
+  transition: 0.2s ease;
+}
+
+.footer-bottom-links a:hover {
+  color: #ffffff;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+  .footer-main {
+    grid-template-columns: 1.5fr 1fr 1fr;
+  }
+
+  .footer-contact {
+    grid-column: span 3;
+    margin-top: 10px;
+  }
+}
+
+@media (max-width: 700px) {
+  .footer {
+    padding: 55px 6% 24px;
+  }
+
+  .footer-main {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px 25px;
+  }
+
+  .footer-company {
+    grid-column: span 2;
+  }
+
+  .footer-contact {
+    grid-column: span 2;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-main {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-company,
+  .footer-contact {
+    grid-column: span 1;
+  }
+
+  .footer-logo-box {
+    width: 170px;
+  }
+
+  .footer-bottom-links {
+    flex-wrap: wrap;
+  }
+}
+.footer-company p,.footer-column a,.footer-column button,.footer-contact p{font-family:var(--font-body)}.footer-column h3{font-family:var(--font-display);font-size:1.3rem}.footer-logo-box,.footer-quote-btn span{border-radius:0}.footer-quote-btn{border-radius:0;background:var(--clay)}.footer-quote-btn:hover{background:var(--sand)}

@@ -1,0 +1,2 @@
+main { overflow: clip; }
+section { padding-inline: clamp(1.25rem, 5vw, 5rem); }

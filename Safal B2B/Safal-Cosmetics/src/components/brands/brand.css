@@ -1,0 +1,569 @@
+/* =========================================
+   BRANDS SECTION
+========================================= */
+
+/* MAIN SECTION */
+.brands-section {
+  width: 100%;
+
+  position: relative;
+
+  overflow: hidden;
+
+  background: var(--ink-deep);
+
+  color: #ffffff;
+
+  padding: 105px 0 45px;
+
+  box-sizing: border-box;
+}
+
+
+/* =========================================
+   HEADER
+========================================= */
+
+.brands-header {
+  padding: 0 7%;
+
+  position: relative;
+
+  z-index: 2;
+}
+
+
+/* =========================================
+   LABEL
+========================================= */
+/*
+.brands-label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 22px;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 9px;
+
+  font-weight: 600;
+
+  letter-spacing: 2.5px;
+
+  color: #999;
+}
+  */
+/*rands-label span {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #164c9c;
+}
+*/
+
+
+/* =========================================
+   HEADING ROW
+========================================= */
+
+.brands-heading-row {
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-between;
+
+  gap: 80px;
+}
+
+
+/* =========================================
+   HEADING
+========================================= */
+
+.brands-heading-row h2 {
+  margin: 0;
+
+  font-family: Georgia, "Times New Roman", serif;
+
+  font-size: clamp(48px, 5.5vw, 78px);
+
+  line-height: 0.92;
+
+  letter-spacing: -3px;
+
+  font-weight: 400;
+
+  color: #ffffff;
+}
+
+.brands-heading-row h2 span {
+  color: #5f8dcc;
+}
+
+
+/* =========================================
+   DESCRIPTION
+========================================= */
+
+.brands-heading-row p {
+  max-width: 350px;
+
+  margin: 0 0 5px;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 13px;
+
+  line-height: 1.7;
+
+  color: #999;
+}
+
+
+/* =========================================
+   LINE
+========================================= */
+
+.brands-line {
+  width: 86%;
+
+  height: 1px;
+
+  margin: 55px auto 0;
+
+  background: rgba(255, 255, 255, 0.12);
+
+  position: relative;
+}
+
+.brands-line span {
+  position: absolute;
+
+  left: 0;
+
+  top: -1px;
+
+  width: 80px;
+
+  height: 2px;
+
+  background: #164c9c;
+}
+
+
+
+/* =========================================
+   MARQUEE WRAPPER
+========================================= */
+
+.brands-marquee-wrapper {
+  width: 100%;
+
+  overflow: hidden;
+
+  margin-top: 55px;
+
+  position: relative;
+}
+
+
+/*
+  Fade edges
+*/
+
+.brands-marquee-wrapper::before,
+.brands-marquee-wrapper::after {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+
+  width: 160px;
+
+  height: 100%;
+
+  z-index: 5;
+
+  pointer-events: none;
+}
+
+.brands-marquee-wrapper::before {
+  left: 0;
+
+  background: linear-gradient(
+    to right,
+    #0b0b0b,
+    transparent
+  );
+}
+
+.brands-marquee-wrapper::after {
+  right: 0;
+
+  background: linear-gradient(
+    to left,
+    #0b0b0b,
+    transparent
+  );
+}
+
+
+/* =========================================
+   MARQUEE
+========================================= */
+
+.brands-marquee {
+  display: flex;
+
+  width: max-content;
+
+  align-items: flex-start;
+
+  gap: 30px;
+
+  animation: brandSlide 38s linear infinite;
+}
+
+
+/*
+  Pause when user hovers
+*/
+
+.brands-marquee:hover {
+  animation-play-state: paused;
+}
+
+
+/* =========================================
+   BRAND ITEM
+========================================= */
+
+.brand-item {
+  width: 170px;
+
+  flex-shrink: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  gap: 15px;
+}
+
+
+/* =========================================
+   CIRCLE
+========================================= */
+
+.brand-circle {
+  width: 170px;
+  height: 170px;
+
+  border-radius: 50%;
+
+  background: #f5f4ee;
+
+  border: 1px solid rgba(255, 255, 255, 0.12);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  overflow: hidden;
+
+  position: relative;
+
+  transition:
+    transform 0.35s ease,
+    border-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+
+/*
+  Subtle inner ring
+*/
+
+.brand-circle::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 8px;
+
+  border-radius: 50%;
+
+  border: 1px solid rgba(0, 0, 0, 0.08);
+
+  pointer-events: none;
+}
+
+
+/*
+  Hover
+*/
+
+.brand-item:hover .brand-circle {
+  transform: translateY(-8px);
+
+  border-color: rgba(95, 141, 204, 0.8);
+
+  box-shadow:
+    0 15px 40px rgba(0, 0, 0, 0.3);
+}
+
+
+/* =========================================
+   LOGO
+========================================= */
+
+.brand-circle img {
+  width: 72%;
+
+  height: 72%;
+
+  object-fit: contain;
+
+  display: block;
+
+  position: relative;
+
+  z-index: 2;
+
+  transition: transform 0.35s ease;
+}
+
+.brand-item:hover .brand-circle img {
+  transform: scale(1.06);
+}
+
+
+/* =========================================
+   BRAND NAME
+========================================= */
+
+.brand-name {
+  font-family: Arial, sans-serif;
+
+  font-size: 9px;
+
+  letter-spacing: 1px;
+
+  text-transform: uppercase;
+
+  color: #777;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================
+   ANIMATION
+========================================= */
+
+@keyframes brandSlide {
+
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    /*
+      10 brands × (170px + 30px gap)
+    */
+    transform: translateX(-2000px);
+  }
+
+}
+
+
+/* =========================================
+   FOOTER
+========================================= */
+
+.brands-footer {
+  width: 86%;
+
+  margin: 60px auto 0;
+
+  padding-top: 25px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 15px;
+
+  font-family: Arial, sans-serif;
+
+  font-size: 8px;
+
+  letter-spacing: 2px;
+
+  color: #666;
+}
+
+.footer-dot {
+  width: 4px;
+  height: 4px;
+
+  border-radius: 50%;
+
+  background: #164c9c;
+}
+
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 900px) {
+
+  .brands-section {
+    padding-top: 80px;
+  }
+
+  .brands-heading-row {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 25px;
+  }
+
+  .brands-heading-row p {
+    max-width: 500px;
+  }
+
+  .brand-item {
+    width: 150px;
+  }
+
+  .brand-circle {
+    width: 150px;
+    height: 150px;
+  }
+
+  .brands-marquee {
+    gap: 25px;
+
+    animation-duration: 35s;
+  }
+
+  @keyframes brandSlide {
+
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-1750px);
+    }
+
+  }
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+  .brands-section {
+    padding: 70px 0 35px;
+  }
+
+  .brands-header {
+    padding: 0 20px;
+  }
+
+  .brands-heading-row h2 {
+    font-size: 48px;
+
+    letter-spacing: -2px;
+  }
+
+  .brands-heading-row p {
+    font-size: 12px;
+  }
+
+  .brands-line {
+    width: calc(100% - 40px);
+
+    margin-top: 40px;
+  }
+
+  .brands-marquee-wrapper {
+    margin-top: 40px;
+  }
+
+  .brand-item {
+    width: 130px;
+
+    gap: 12px;
+  }
+
+  .brand-circle {
+    width: 130px;
+    height: 130px;
+  }
+
+  .brand-name {
+    font-size: 8px;
+  }
+
+  .brands-marquee {
+    gap: 20px;
+
+    animation-duration: 30s;
+  }
+
+  .brands-marquee-wrapper::before,
+  .brands-marquee-wrapper::after {
+    width: 60px;
+  }
+
+  .brands-footer {
+    width: calc(100% - 40px);
+
+    gap: 8px;
+
+    font-size: 6px;
+
+    letter-spacing: 1px;
+
+    flex-wrap: wrap;
+  }
+
+  @keyframes brandSlide {
+
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-1500px);
+    }
+
+  }
+}
+.brands-section::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 0,rgba(197,155,98,.17),transparent 28rem);pointer-events:none}.brands-heading-row h2{font-family:var(--font-display)}.brands-heading-row h2 span{color:var(--sand)}.brands-heading-row p,.brand-name{font-family:var(--font-body)}.brands-line span,.footer-dot{background:var(--sand)}.brands-marquee-wrapper::before{background:linear-gradient(to right,var(--ink-deep),transparent)}.brands-marquee-wrapper::after{background:linear-gradient(to left,var(--ink-deep),transparent)}.brand-circle{border-radius:2rem;background:var(--paper)}.brand-circle::before{border-radius:1.5rem}.brand-item:hover .brand-circle{border-color:var(--sand);box-shadow:0 1rem 2rem rgba(0,0,0,.25)}
