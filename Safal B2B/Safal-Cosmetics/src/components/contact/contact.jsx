@@ -1,4 +1,4 @@
-import "./Contact.css";
+import "./contact.css";
 import Reveal from "../Reveal";
 
 function Contact() {
