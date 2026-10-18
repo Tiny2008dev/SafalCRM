@@ -1,4 +1,4 @@
-require("dotenv").config();
+require("dotenv").config({ path: process.env.PROVISION_ENV_FILE || ".env" });
 const crypto = require("crypto");
 const { promisify } = require("util");
 const mysql = require("mysql2/promise");
@@ -15,11 +15,17 @@ async function main() {
     }
     const config = {
         host: process.env.PROVISION_DB_HOST,
+        port: process.env.PROVISION_DB_PORT ? Number(process.env.PROVISION_DB_PORT) : 3306,
         user: process.env.PROVISION_DB_USER,
         password: process.env.PROVISION_DB_PASSWORD,
         database: process.env.PROVISION_DB_NAME,
     };
-    if (Object.values(config).some((value) => !value?.trim())) throw new Error("Set PROVISION_DB_HOST, PROVISION_DB_USER, PROVISION_DB_PASSWORD and PROVISION_DB_NAME for this one-time operation.");
+    if ([config.host, config.user, config.password, config.database].some((value) => !value?.trim())) {
+        throw new Error("Set PROVISION_DB_HOST, PROVISION_DB_USER, PROVISION_DB_PASSWORD, PROVISION_DB_NAME and PROVISION_DB_PORT for this one-time operation.");
+    }
+    if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) {
+        throw new Error("PROVISION_DB_PORT must be a valid port number between 1 and 65535.");
+    }
     if (config.user.trim().toLowerCase() === "root") throw new Error("Use the dedicated provisioning account, not MySQL root.");
     const db = await mysql.createConnection(config);
     try {

@@ -13,16 +13,16 @@ const sidebarItems = [
   "Reports",
 ];
 
-function Sidebar({ activePage, onSelect, onLogout }) {
+function Sidebar({ activePage, mobileOpen, onSelect, onLogout }) {
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       <div className="brand-block">
         <img className="brand-mark" src={`${process.env.PUBLIC_URL}/Safallogo.png`} alt="Safal Marg" />
         <div>
           <h1>Safal Cosmetics</h1>
         </div>
       </div>
-      <nav className="menu-list" aria-label="Main navigation">
+      <nav id="crm-main-navigation" className="menu-list" aria-label="Main navigation">
         {sidebarItems.map((item) => (
           <button
             key={item}
