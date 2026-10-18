@@ -44,7 +44,7 @@ Do not grant global privileges, `GRANT OPTION`, `FILE`, account administration, 
 
 The legacy `server/scripts/apply_schema_migration.js` helper now requires `MIGRATION_DB_HOST`, `MIGRATION_DB_USER`, `MIGRATION_DB_PASSWORD`, and `MIGRATION_DB_NAME` from protected configuration. Do not set these to the application identity. Prefer the reviewed version-controlled SQL files below for new deployments.
 
-The connected database was observed without `b2b_enquiries`. Review `2026-10-15-b2b-enquiries.sql` followed by `2026-10-15-b2b-enquiry-idempotency.sql`, back up the target, verify `DB_NAME`, and apply them in order with a migration identity only after approval. The first DDL creates a standalone intake table; the second adds and backfills an opaque unique submission key. Neither changes CRM business rows. The runtime application account needs ordinary DML privileges on the new table.
+The local development database was observed without `b2b_enquiries`, backed up, and migrated on 2026-10-17. Production databases were not changed. For another deployment, review `2026-10-15-b2b-enquiries.sql` followed by `2026-10-15-b2b-enquiry-idempotency.sql`, back up the target, verify `DB_NAME`, and apply them in order with a migration identity. The first DDL creates a standalone intake table; the second adds and backfills an opaque unique submission key. Neither changes CRM business rows. The runtime application account needs ordinary DML privileges on the new table.
 
 Example with an interactive password prompt (run from the CRM repository root):
 

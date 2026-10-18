@@ -22,7 +22,7 @@ function authorizeCRMRequest(req, res, next) {
     if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
     return requireAdmin(req, res, next);
 }
-const allowedOrigins = (process.env.CORS_ORIGINS || (process.env.NODE_ENV === "production" ? "" : "http://localhost:3001,http://localhost:5173"))
+const allowedOrigins = (process.env.CORS_ORIGINS || (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000,http://localhost:3001,http://localhost:5173"))
     .split(",").map((origin) => origin.trim()).filter(Boolean);
 if (process.env.NODE_ENV === "production") {
     if (!allowedOrigins.length || allowedOrigins.some((origin) => !origin.startsWith("https://"))) {

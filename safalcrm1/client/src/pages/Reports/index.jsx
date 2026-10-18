@@ -17,6 +17,7 @@ import {
 } from "recharts";
 import { fetchJson } from "../../services/api";
 import { csvCell } from "./csv";
+import { downloadReportPdf } from "./pdf";
 
 const currency = (value) => {
   const amount = Number(value ?? 0);
@@ -105,6 +106,7 @@ const ReportsPage = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const handleApplyFilters = useCallback(async (nextFilters = createDefaultFilters()) => {
     const preparedFilters = normalizeFilters(nextFilters);
@@ -279,6 +281,18 @@ handleApplyFilters(createDefaultFilters());
     URL.revokeObjectURL(link.href);
   };
 
+  const exportPdf = () => {
+    setExportingPdf(true);
+    try {
+      downloadReportPdf({ dashboard, filters: activeFilters });
+    } catch (err) {
+      console.error("PDF export failed:", err);
+      setError("Unable to create the PDF report. Please try again.");
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   const updateFilter = (changes) => {
     setFilters((current) => normalizeFilters({ ...current, ...changes }));
   };
@@ -422,6 +436,9 @@ handleApplyFilters(createDefaultFilters());
           <button className="btn primary" onClick={() => handleApplyFilters(normalizeFilters(filters))} disabled={loading}>Apply Filters</button>
           <button className="btn secondary" onClick={resetFilters}>Reset</button>
           <button className="btn secondary" onClick={exportReport} disabled={loading || !dashboard.ordersSummary}>Export CSV</button>
+          <button className="btn secondary" onClick={exportPdf} disabled={loading || exportingPdf || !dashboard.ordersSummary}>
+            {exportingPdf ? "Preparing PDF…" : "Export PDF"}
+          </button>
         </div>
       </section>
 

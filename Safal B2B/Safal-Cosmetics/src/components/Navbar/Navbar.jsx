@@ -8,7 +8,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const crmBaseUrl = (import.meta.env.VITE_CRM_URL || "").trim().replace(/\/+$/, "");
+  const crmBaseUrl = (import.meta.env.VITE_CRM_URL || (import.meta.env.DEV ? "http://localhost:3000" : "")).trim().replace(/\/+$/, "");
 
   useEffect(() => {
     const onScroll = () => {
@@ -117,7 +117,7 @@ const Navbar = () => {
           </a>
 
           <a
-            href={crmBaseUrl ? `${crmBaseUrl}/login` : undefined}
+            href={crmBaseUrl || undefined}
             className="admin-login-link"
             onClick={closeMenu}
             target="_blank"

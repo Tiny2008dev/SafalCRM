@@ -30,18 +30,29 @@ async function parseResponse(response) {
     throw new Error('Server returned a non-JSON response.');
 }
 
-export async function loginUser(credentials) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-            ...authHeaders({ 'Content-Type': 'application/json' }),
-        },
-        body: JSON.stringify(credentials),
+function withApiFallback(promiseFactory, fallbackMessage = 'The CRM server is unreachable. Make sure the backend is running.') {
+    return promiseFactory().catch((error) => {
+        if (error instanceof TypeError || error?.name === 'TypeError') {
+            throw new Error(fallbackMessage);
+        }
+        throw error;
     });
+}
 
-    const data = await parseResponse(response);
-    setAuthToken(data.token);
-    return data;
+export async function loginUser(credentials) {
+    return withApiFallback(async () => {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            method: 'POST',
+            headers: {
+                ...authHeaders({ 'Content-Type': 'application/json' }),
+            },
+            body: JSON.stringify(credentials),
+        });
+
+        const data = await parseResponse(response);
+        setAuthToken(data.token);
+        return data;
+    }, `CRM login is unavailable. Check that the backend is running at ${API_BASE_URL} and allows requests from this website.`);
 }
 
 export async function getClients() {

@@ -61,7 +61,7 @@ const LoginPage = ({ onLogin }) => {
               type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@safalcrm.com"
+              placeholder="username"
               disabled={loading}
             />
           </div>

@@ -16,6 +16,7 @@ The website is designed to provide a simple and professional online presence for
 - 📱 Responsive design for different screen sizes
 - 🧭 Easy navigation between different sections
 - 📩 Contact forms for business enquiries
+- 🔗 Enquiry and quote links open the Google Form
 
 ## 🛠️ Technologies Used
 
@@ -40,6 +41,12 @@ The main goal of the website is to provide Safal Cosmetics with a professional d
 The project focuses on presenting business information clearly while providing enquiry and quotation functionality for potential clients.
 
 ## 🚀 Getting Started
+
+### CRM Admin Login link
+
+The Admin Login link opens the Safal CRM frontend at its configured URL. For local development, copy `.env.example` to `.env` and start the CRM frontend at `http://localhost:3000`. For production, set `VITE_CRM_URL` to the deployed CRM website URL before building; production builds require this URL to use HTTPS.
+
+The "Start a conversation", "Request a quote", and "Send an Enquiry" links open the Google enquiry form.
 
 ### 1. Clone the repository
 

@@ -48,9 +48,28 @@ router.post("/", publicEnquiryLimiter, async (req, res) => {
 router.get("/", authenticateToken, async (req, res) => {
     const limit = Math.min(100, Math.max(1, Number.parseInt(req.query.limit, 10) || 25));
     const offset = Math.max(0, Number.parseInt(req.query.offset, 10) || 0);
+    const search = typeof req.query.search === "string" ? req.query.search.trim().slice(0, 150) : "";
+    const status = typeof req.query.status === "string" ? req.query.status.trim() : "";
+    if (status && !statuses.has(status)) return res.status(400).json({ message: "A valid enquiry status is required." });
+    const conditions = [];
+    const values = [];
+    if (status) {
+        conditions.push("status = ?");
+        values.push(status);
+    }
+    if (search) {
+        conditions.push("(company_name LIKE ? OR contact_person LIKE ? OR email LIKE ? OR product_interest LIKE ?)");
+        const term = `%${search}%`;
+        values.push(term, term, term, term);
+    }
+    const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
     try {
-        const [rows] = await db.query("SELECT id, company_name, contact_person, email, phone, product_interest, quantity, message, status, created_at FROM b2b_enquiries ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?", [limit, offset]);
-        return res.json({ enquiries: rows, limit, offset });
+        const [[count]] = await db.query(`SELECT COUNT(*) AS total FROM b2b_enquiries${where}`, values);
+        const [rows] = await db.query(
+            `SELECT id, company_name, contact_person, email, phone, product_interest, quantity, message, status, created_at FROM b2b_enquiries${where} ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?`,
+            [...values, limit, offset]
+        );
+        return res.json({ enquiries: rows, limit, offset, total: Number(count.total) });
     } catch (error) {
         console.error("Enquiry retrieval failed:", error.message);
         return res.status(500).json({ message: "Unable to load enquiries." });
