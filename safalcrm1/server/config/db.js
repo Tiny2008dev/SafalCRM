@@ -7,11 +7,21 @@ function validateDatabaseConfig(env = process.env) {
     if (missing.length) throw new Error(`Required production database settings are missing: ${missing.join(", ")}.`);
     if (env.DB_USER.trim().toLowerCase() === "root") throw new Error("The CRM application must use a dedicated non-root MySQL account in production.");
     if (/(replace|placeholder|change|example|your[-_ ]|todo)/i.test(env.DB_PASSWORD)) throw new Error("DB_PASSWORD must be set to a real protected credential in production.");
+    getDatabasePort(env);
+}
+
+function getDatabasePort(env = process.env) {
+    const port = env.DB_PORT ? Number(env.DB_PORT) : 3306;
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+        throw new Error("DB_PORT must be a valid port number between 1 and 65535.");
+    }
+    return port;
 }
 
 validateDatabaseConfig();
 const pool = mysql.createPool({
     host: process.env.DB_HOST || "localhost",
+    port: getDatabasePort(),
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
     database: process.env.DB_NAME || "safal_crm",

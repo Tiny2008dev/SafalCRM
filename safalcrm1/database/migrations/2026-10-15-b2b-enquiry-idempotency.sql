@@ -1,5 +1,7 @@
 -- Run once after 2026-10-15-b2b-enquiries.sql.
 -- Backfill legacy rows with distinct opaque keys before enforcing NOT NULL/UNIQUE.
+
+USE railway;
 ALTER TABLE b2b_enquiries ADD COLUMN submission_key CHAR(64) NULL AFTER message;
 UPDATE b2b_enquiries
 SET submission_key = SHA2(CONCAT('legacy:', id), 256)

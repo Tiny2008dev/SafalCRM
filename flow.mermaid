@@ -1,0 +1,25 @@
+
+flowchart LR
+    B2B["Safal B2B Website<br/>React + Vite"]
+    IMS["IMS Client<br/>React"]
+    API["IMS API<br/>Node.js + Express"]
+    DB[("MySQL Database")]
+
+    Visitor["B2B Visitor"] --> Form["Submit Enquiry"]
+    Form -->|POST /api/enquiries| API
+    API --> Validate["Validate, sanitize,<br/>rate-limit, deduplicate"]
+    Validate -->|Parameterized SQL| DB
+    API -->|Success or error response| B2B
+
+    Admin["IMS Administrator"] --> Login["IMS Login"]
+    Login -->|POST /api/auth/login| API
+    API -->|Check credentials| DB
+    API -->|Signed bearer token| IMS
+
+    IMS -->|Authenticated API requests| API
+    API -->|Verify token and role| Auth["Authentication and authorization"]
+    Auth -->|Read or update IMS data| DB
+
+    IMS -->|GET /api/enquiries| API
+    API -->|Paginated enquiry results| IMS
+    IMS -->|PATCH /api/enquiries/:id/status<br/>Admin only| API

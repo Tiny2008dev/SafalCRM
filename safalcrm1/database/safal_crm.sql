@@ -1,5 +1,6 @@
-CREATE DATABASE IF NOT EXISTS safal_crm;
-USE safal_crm;
+-- Select the target database in MySQL Workbench before running this script.
+-- This lets the same schema script be applied to Railway's existing database.
+USE railway;
 
 CREATE TABLE IF NOT EXISTS users (
   id INT AUTO_INCREMENT PRIMARY KEY,

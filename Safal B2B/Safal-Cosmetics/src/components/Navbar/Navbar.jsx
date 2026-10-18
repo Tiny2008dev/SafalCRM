@@ -120,7 +120,7 @@ const Navbar = () => {
             href={crmBaseUrl || undefined}
             className="admin-login-link"
             onClick={closeMenu}
-            target="_blank"
+           
             rel="noopener noreferrer"
             aria-disabled={!crmBaseUrl}
           >
